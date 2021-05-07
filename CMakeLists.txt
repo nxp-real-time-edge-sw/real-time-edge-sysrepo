@@ -50,6 +50,7 @@ set(SOURCES
 		src/brtc_cfg.c
 		src/ip_cfg.c
 		src/mac_cfg.c
+		src/cb.c
 		src/vlan_cfg.c
 		src/file_mon.c)
 

@@ -3,7 +3,7 @@
  * @author Xiaolin He
  * @brief Application to configure TSN function based on sysrepo datastore.
  *
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@
 #include "vlan_cfg.h"
 #include "mac_cfg.h"
 #include "brtc_cfg.h"
+#include "cb.h"
 
 static uint8_t exit_application;
 
@@ -207,6 +208,17 @@ int main(int argc, char **argv)
 					 NULL, 0, opts, &if_subscription);
 	if (rc != SR_ERR_OK) {
 		fprintf(stderr, "Error by sr_module_change_subscribe: %s\n",
+			sr_strerror(rc));
+		goto cleanup;
+	}
+
+	/* Subscribe to CB */
+	snprintf(path, XPATH_MAX_LEN, "%s", CB_XPATH);
+	opts = SR_SUBSCR_DEFAULT | SR_SUBSCR_CTX_REUSE | SR_SUBSCR_EV_ENABLED;
+	rc = sr_subtree_change_subscribe(session, path, cb_subtree_change_cb,
+					 NULL, 0, opts, &if_subscription);
+	if (rc != SR_ERR_OK) {
+		fprintf(stderr, "Error subscribe cb_subtree_change_cb: %s\n",
 			sr_strerror(rc));
 		goto cleanup;
 	}
