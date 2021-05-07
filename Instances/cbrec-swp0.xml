@@ -1,0 +1,11 @@
+<frame-replication-and-elimination xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1cb-frer"
+			       xmlns:ii="urn:ietf:params:xml:ns:yang:ietf-interfaces:interfaces:interface">
+	<sequence-recovery-list>
+		<index>1</index>
+		<history-length>31</history-length>
+		
+		<port-list>swp0</port-list>
+	</sequence-recovery-list>
+</frame-replication-and-elimination>		
+				
+		
