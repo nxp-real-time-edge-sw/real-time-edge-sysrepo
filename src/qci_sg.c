@@ -624,7 +624,7 @@ int qci_sg_get_para(char *buf, int len)
 	for (i = 0; i < para->entry_cnt; i++) {
 		gate = para->entry + i;
 
-		snprintf(sub_buf, len, "action gate index %d ", gate->id);
+		snprintf(sub_buf, SUB_CMD_LEN, "action gate index %d ", gate->id);
 		strncat(buf, sub_buf, len - 1 - strlen(buf));
 
 		snprintf(sub_buf, SUB_CMD_LEN, "base-time %" PRIu64 " ", gate->base_time);
