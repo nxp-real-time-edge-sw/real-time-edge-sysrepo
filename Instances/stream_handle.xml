@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bridges xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge"
+         xmlns:stream="urn:ieee:std:802.1Q:yang:ieee802-dot1q-stream-id">
+	<bridge>
+		<name>switch</name>
+		<address>00-00-00-00-00-02</address>
+	
+	<bridge-type>provider-bridge</bridge-type>
+		<component>
+		    <name>swp0</name>
+		    <type>edge-relay-component</type>
+		    <stream:streams>
+			<stream:stream-identity-table>
+			    <stream:index>0</stream:index>
+			    <stream:stream-id-enabled>true</stream:stream-id-enabled>
+			    <stream:stream-handle>0</stream:stream-handle>
+			    <stream:identification-type>null</stream:identification-type>
+			</stream:stream-identity-table>
+			<stream:stream-identity-table>
+			    <stream:index>1</stream:index>
+			    <stream:stream-id-enabled>true</stream:stream-id-enabled>
+			    <stream:stream-handle>1</stream:stream-handle>
+			    <stream:identification-type>null</stream:identification-type>
+			</stream:stream-identity-table>
+			<stream:stream-identity-table>
+			    <stream:index>2</stream:index>
+			    <stream:stream-id-enabled>true</stream:stream-id-enabled>
+			    <stream:stream-handle>2</stream:stream-handle>
+			    <stream:identification-type>null</stream:identification-type>
+			</stream:stream-identity-table>
+		    </stream:streams>
+		</component>
+	</bridge>
+</bridges>

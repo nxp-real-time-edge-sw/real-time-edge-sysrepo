@@ -1,0 +1,16 @@
+<interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces"
+	    xmlns:sched="urn:ieee:std:802.1Q:yang:ieee802-dot1q-sched"
+	     xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+	    xmlns:preempt="urn:ieee:std:802.1Q:yang:ieee802-dot1q-preemption">
+	<interface>
+		<name>swp3</name>
+		<enabled>true</enabled>
+		<type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+		
+	</interface>
+	<interface>
+		<name>swp0</name>
+		<enabled>true</enabled>
+		<type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+	</interface>
+</interfaces>
