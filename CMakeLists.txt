@@ -8,6 +8,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
 
 include_directories("${PROJECT_SOURCE_DIR}/inc")
 
+# dependencies - libtsn
+find_package(TSN REQUIRED)
+include_directories(${TSN_INCLUDE_DIRS})
+set(LIBS ${LIBS} ${TSN_LIBRARIES})
+
 # dependencies - cjson
 find_package(CJSON REQUIRED)
 include_directories(${CJSON_INCLUDE_DIRS})
@@ -22,11 +27,6 @@ set(LIBS ${LIBS} ${NL_LIBRARIES})
 find_package(NLGEN REQUIRED)
 include_directories(${NLGEN_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${NLGEN_LIBRARIES})
-
-# dependencies - libtsn
-find_package(TSN REQUIRED)
-include_directories(${TSN_INCLUDE_DIRS})
-set(LIBS ${LIBS} ${TSN_LIBRARIES})
 
 # dependencies - sysrepo
 find_package(SYSREPO REQUIRED)
