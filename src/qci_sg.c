@@ -654,10 +654,11 @@ int qci_sg_get_para(char *buf, int len)
 		goto ret_tag;
 
 	ifn = get_interface_name();
-	if (strstr(host_name, "LS1028ATSN") && (strlen(ifn) >= 5) && (ifn[0] == 's') && (ifn[1] == 'w'))
+	if (strcasestr(host_name, "LS1028ATSN") && (strlen(ifn) >= 5)
+				&& (ifn[0] == 's') && (ifn[1] == 'w'))
 		trap_flag = true;
 
-	if (strstr(host_name, "LS1021ATSN"))
+	if (strcasestr(host_name, "LS1021ATSN"))
 		trap_flag = true;
 
 	if (trap_flag) {
