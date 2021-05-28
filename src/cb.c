@@ -60,8 +60,7 @@ static int parse_node(sr_session_ctx_t *session, sr_val_t *value,
 			conf->output_id_list[value->data.uint8_val] = value->data.uint8_val + 1;
 	} else if (!strcmp(nodename, "port")) {
 		strncpy(port_path, value->xpath, strlen(PPATH));
-		if (strcmp(port_path, PPATH) == 0)
-			strcpy(conf->genport, value->data.string_val);
+		strcpy(conf->genport, value->data.string_val);
 	}
 
 ret_tag:
