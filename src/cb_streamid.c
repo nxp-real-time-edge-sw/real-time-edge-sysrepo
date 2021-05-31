@@ -760,7 +760,7 @@ int cb_streamid_del_tc_config(char *buf, int len)
 	char *chain_id = "";
 
 	host_name = get_host_name();
-	if (host_name && strstr(host_name, "LS1028ARDB"))
+	if (host_name && strcasestr(host_name, "LS1028ARDB"))
 		chain_id = " chain 30000 ";
 
 	snprintf(buf, len, "tc filter del dev %s ingress %s ;", para->ifname, chain_id);
@@ -793,7 +793,7 @@ int cb_streamid_get_para(char *buf, int len)
 		return cb_streamid_del_tc_config(buf, len);
 
 	host_name = get_host_name();
-	if (host_name && strstr(host_name, "LS1028ARDB"))
+	if (host_name && strcasestr(host_name, "LS1028ARDB"))
 		chain_id = " chain 30000 ";
 
 	if (!stc_qdisc_flag) {

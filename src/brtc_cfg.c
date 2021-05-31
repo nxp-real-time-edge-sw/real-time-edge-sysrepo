@@ -296,7 +296,7 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 		return rc;
 
 	host_name = get_host_name();
-	if (host_name && strstr(host_name, "LS1028ARDB")) {
+	if (host_name && strcasestr(host_name, "LS1028ARDB")) {
 		chain_id = " chain 11000 ";
 		chain_next = " action goto chain 12000 ";
 	}
