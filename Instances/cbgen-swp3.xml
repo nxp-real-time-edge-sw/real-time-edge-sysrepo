@@ -11,7 +11,7 @@
 	<stream-split-list>
 		<port>swp3</port>
 		<direction>true</direction>
-		<input-id-list>1</input-id-list>
+		<input-id-list>3</input-id-list>
 		<output-id-list>0</output-id-list>
 		<output-id-list>1</output-id-list>
 		<output-id-list>2</output-id-list>

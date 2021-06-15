@@ -28,6 +28,7 @@ struct item_cfg {
 	int ind;
 	char port[20];
 	char genport[20];
+	unsigned int input_id_list[10];
 	unsigned int output_id_list[10];
 	int cb_flag;
 };
@@ -61,6 +62,9 @@ static int parse_node(sr_session_ctx_t *session, sr_val_t *value,
 	} else if (!strcmp(nodename, "port")) {
 		strncpy(port_path, value->xpath, strlen(PPATH));
 		strcpy(conf->genport, value->data.string_val);
+	} else if (!strcmp(nodename, "input-id-list")) {
+		if (value->data.uint8_val < 10)
+			conf->input_id_list[value->data.uint8_val] = value->data.uint8_val + 1;
 	}
 
 ret_tag:
@@ -191,6 +195,8 @@ void cbgen_execute(void)
 	int split_mask = 0;
 	int index = 0;
 	int num = 0;
+	int index_in = 0;
+	int num_in = 0;
 
 	memset(&cbgenr, 0, sizeof(cbgenr));
 	for (index = 0; index < 10; index++) {
@@ -203,7 +209,16 @@ void cbgen_execute(void)
 	for (num = 0; num < 10; num++)
 		split_mask = split_mask + conf->output_id_list[num];
 
-	iport_mask = 0x01 << (conf->genport[3] - '0');
+	for (index_in = 0; index_in < 10; index_in++) {
+		if (conf->input_id_list[index_in] != 0) {
+			conf->input_id_list[index_in] = conf->input_id_list[index_in] - 1;
+			conf->input_id_list[index_in] = 0x01 << conf->input_id_list[index_in];
+		}
+	}
+
+	for (num_in = 0; num_in < 10; num_in++)
+		iport_mask = iport_mask + conf->input_id_list[num_in];
+
 	cbgenr.seq_len = 16;
 	cbgenr.seq_num = 2048;
 	cbgenr.iport_mask = iport_mask;

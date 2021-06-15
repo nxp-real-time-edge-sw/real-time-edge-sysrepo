@@ -15,19 +15,25 @@
 			    <stream:stream-id-enabled>true</stream:stream-id-enabled>
 			    <stream:stream-handle>0</stream:stream-handle>
 			    <stream:identification-type>null</stream:identification-type>
-			</stream:stream-identity-table>
+		    	</stream:stream-identity-table>
 			<stream:stream-identity-table>
-			    <stream:index>1</stream:index>
-			    <stream:stream-id-enabled>true</stream:stream-id-enabled>
-			    <stream:stream-handle>1</stream:stream-handle>
-			    <stream:identification-type>null</stream:identification-type>
-			</stream:stream-identity-table>
+                            <stream:index>1</stream:index>
+                            <stream:stream-id-enabled>true</stream:stream-id-enabled>
+                            <stream:stream-handle>1</stream:stream-handle>
+                            <stream:identification-type>null</stream:identification-type>
+                        </stream:stream-identity-table>
 			<stream:stream-identity-table>
 			    <stream:index>2</stream:index>
 			    <stream:stream-id-enabled>true</stream:stream-id-enabled>
 			    <stream:stream-handle>2</stream:stream-handle>
 			    <stream:identification-type>null</stream:identification-type>
-			</stream:stream-identity-table>
+		    	</stream:stream-identity-table>
+			<stream:stream-identity-table>
+                            <stream:index>3</stream:index>
+                            <stream:stream-id-enabled>true</stream:stream-id-enabled>
+                            <stream:stream-handle>3</stream:stream-handle>
+                            <stream:identification-type>null</stream:identification-type>
+                        </stream:stream-identity-table>
 		    </stream:streams>
 		</component>
 	</bridge>
