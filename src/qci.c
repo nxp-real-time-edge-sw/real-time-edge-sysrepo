@@ -100,8 +100,8 @@ struct std_qci_list *new_list_node(enum qci_type type, char *port,
 
 		list->sg_ptr->sgconf.admin.gcl = malloc(MAX_ENTRY_SIZE);
 		if (!list->sg_ptr->sgconf.admin.gcl) {
-			free(list);
 			free(list->sg_ptr);
+			free(list);
 			return NULL;
 		}
 
