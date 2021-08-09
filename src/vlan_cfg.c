@@ -22,6 +22,7 @@
 
 struct item_cfg {
 	bool valid;
+	bool delflag;
 	bool vidflag;
 	uint32_t vid;
 	char ifname[IF_NAME_MAX_LEN];
@@ -91,6 +92,7 @@ static int parse_node(sr_session_ctx_t *session, sr_val_t *value,
 			snprintf(conf->ifname, IF_NAME_MAX_LEN, "%s",
 						value->data.string_val);
 			conf->valid = true;
+			conf->delflag = false;
 		}
 	}
 
@@ -116,6 +118,7 @@ static int parse_item(sr_session_ctx_t *session, char *path,
 		if (is_del_oper(session, path)) {
 			printf("WARN: %s was deleted, disable %s",
 			       path, "this Instance.\n");
+			conf->delflag = true;
 			goto cleanup;
 		} else {
 			printf("WARN: %s sr_get_items: %s\n", __func__,
@@ -160,8 +163,6 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 	char err_msg[MSG_MAX_LEN] = {0};
 	char vid_bak[MAX_VLAN_LEN] = {0};
 	struct item_cfg *conf = &sitem_conf;
-
-	memset(conf, 0, sizeof(struct item_cfg));
 
 	snprintf(xpath, XPATH_MAX_LEN, "%s//*", path);
 
@@ -222,11 +223,17 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 	if (!conf->valid)
 		return rc;
 
-	ret = set_inet_vlan(conf->ifname, conf->vid, true);
+	if (conf->delflag) {
+		conf->delflag = false;
+		ret = set_inet_vlan(conf->ifname, conf->vid, false);
+		PRINT("del vlan ifname:%s vid:%d\n", conf->ifname, conf->vid);
+	} else {
+		ret = set_inet_vlan(conf->ifname, conf->vid, true);
+		PRINT("add vlan ifname:%s vid:%d\n", conf->ifname, conf->vid);
+	}
+
 	if (ret != 0)
 		return SR_ERR_INVAL_ARG;
-
-	PRINT("set_inet_vlan ifname:%s vid:%d\n", conf->ifname, conf->vid);
 
 	return rc;
 }
@@ -246,6 +253,7 @@ int vlan_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 			rc = set_config(session, false);
 		break;
 	case SR_EV_ENABLED:
+		memset(&sitem_conf, 0, sizeof(struct item_cfg));
 		rc = parse_config(session, xpath);
 		if (rc == SR_ERR_OK)
 			rc = set_config(session, false);
