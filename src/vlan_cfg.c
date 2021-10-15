@@ -30,6 +30,26 @@ struct item_cfg {
 
 static struct item_cfg sitem_conf;
 
+static int set_inet_br_vlan(char *ifname, int vid, bool addflag)
+{
+	char cmdstr[MAX_CMD_LEN];
+	int ret;
+
+	if (addflag)
+		snprintf(cmdstr, MAX_CMD_LEN, "bridge vlan add dev %s vid %d",
+			 ifname, vid);
+	else
+		snprintf(cmdstr, MAX_CMD_LEN, "bridge vlan del dev %s vid %d",
+			 ifname, vid);
+
+	ret = system(cmdstr);
+
+	if (SYSCALL_OK(ret))
+		return 0;
+	else
+		return -1;
+}
+
 static int set_inet_vlan(char *ifname, int vid, bool addflag)
 {
 	int ret = 0;
@@ -225,10 +245,10 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 
 	if (conf->delflag) {
 		conf->delflag = false;
-		ret = set_inet_vlan(conf->ifname, conf->vid, false);
+		ret = set_inet_br_vlan(conf->ifname, conf->vid, false);
 		PRINT("del vlan ifname:%s vid:%d\n", conf->ifname, conf->vid);
 	} else {
-		ret = set_inet_vlan(conf->ifname, conf->vid, true);
+		ret = set_inet_br_vlan(conf->ifname, conf->vid, true);
 		PRINT("add vlan ifname:%s vid:%d\n", conf->ifname, conf->vid);
 	}
 
