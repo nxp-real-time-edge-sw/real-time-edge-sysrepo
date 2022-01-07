@@ -55,13 +55,15 @@ static int parse_node(sr_session_ctx_t *session, sr_val_t *value,
 	} else if (!strcmp(nodename, "index")) {
 		conf->ind = value->data.uint8_val;
 	} else if (!strcmp(nodename, "port-list")) {
-		strcpy(conf->port, value->data.string_val);
+		if (strlen(value->data.string_val) < 20)
+			strcpy(conf->port, value->data.string_val);
 	} else if (!strcmp(nodename, "output-id-list")) {
 		if (value->data.uint8_val < 10)
 			conf->output_id_list[value->data.uint8_val] = value->data.uint8_val + 1;
 	} else if (!strcmp(nodename, "port")) {
 		strncpy(port_path, value->xpath, strlen(PPATH));
-		strcpy(conf->genport, value->data.string_val);
+		if (strlen(value->data.string_val) < 20)
+			strcpy(conf->genport, value->data.string_val);
 	} else if (!strcmp(nodename, "input-id-list")) {
 		if (value->data.uint8_val < 10)
 			conf->input_id_list[value->data.uint8_val] = value->data.uint8_val + 1;

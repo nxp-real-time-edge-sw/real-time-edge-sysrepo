@@ -66,7 +66,8 @@ int parse_qbu(sr_val_t *val, uint32_t *tc, uint8_t *pt,
 	char *nodename;
 	int rc;
 
-	if (val->type == SR_LIST_T || val->type == SR_CONTAINER_PRESENCE_T)
+	if (!val || val->type == SR_LIST_T
+		|| val->type == SR_CONTAINER_PRESENCE_T)
 		return 1;
 
 	tc_str = sr_xpath_key_value(val->xpath,
@@ -119,7 +120,7 @@ int abort_qbu_config(sr_session_ctx_t *session, char *path,
 				clr_qbu(old_value, tc_num, pt_num, &oper);
 				continue;
 			} else {
-				pt_num = 0;
+				*pt_num = 0;
 			}
 		}
 		parse_qbu(old_value, tc_num, pt_num, &oper);

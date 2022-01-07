@@ -100,7 +100,6 @@ static int tsn_config_qbv_by_tc(sr_session_ctx_t *session, char *ifname,
 	int offset = 0;
 	pid_t sysret = 0;
 	int rc = SR_ERR_OK;
-	uint32_t clockid = 0;
 	uint32_t gate_mask = 0;
 	char *host_name = NULL;
 	uint32_t interval = 0;
@@ -159,11 +158,6 @@ static int tsn_config_qbv_by_tc(sr_session_ctx_t *session, char *ifname,
 
 	if (cycle_time_extension > 0) {
 		snprintf(stc_subcmd, MAX_CMD_LEN, "cycle-time-extension %" PRIu64 " ", cycle_time_extension);
-		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
-	}
-
-	if (clockid > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "clockid %d ", clockid);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 
@@ -572,8 +566,6 @@ int qbv_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 		 QBV_MODULE_NAME);
 	switch (event) {
 	case SR_EV_VERIFY:
-		if (rc)
-			goto out;
 		rc = qbv_config(session, xpath, false);
 		break;
 	case SR_EV_ENABLED:
@@ -587,7 +579,7 @@ int qbv_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 	default:
 		break;
 	}
-out:
+
 	return rc;
 }
 
