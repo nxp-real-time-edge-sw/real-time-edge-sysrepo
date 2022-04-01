@@ -46,13 +46,13 @@ void clr_qbu(sr_val_t *val, uint32_t *tc, uint8_t *pt,
 
 	tc_str = sr_xpath_key_value(val->xpath,
 				    "frame-preemption-status-table",
-				    "traffic-class", &xp_ctx);
+				    "priority", &xp_ctx);
 	if (!tc_str)
 		return;
 
 	sr_xpath_recover(&xp_ctx);
 	nodename = sr_xpath_node_name(val->xpath);
-	if (strcmp(nodename, "traffic-class") == 0)
+	if (strcmp(nodename, "priority") == 0)
 		*tc = val->data.uint8_val;
 	else if (strcmp(nodename, "frame-preemption-status") == 0)
 		*pt &= ~(1 << *tc);
@@ -72,19 +72,19 @@ int parse_qbu(sr_val_t *val, uint32_t *tc, uint8_t *pt,
 
 	tc_str = sr_xpath_key_value(val->xpath,
 				    "frame-preemption-status-table",
-				    "traffic-class", &xp_ctx);
+				    "priority", &xp_ctx);
 	if (!tc_str)
 		return 1;
 
 	rc = 0;
 	sr_xpath_recover(&xp_ctx);
 	nodename = sr_xpath_node_name(val->xpath);
-	if (strcmp(nodename, "traffic-class") == 0) {
+	if (strcmp(nodename, "priority") == 0) {
 		*tc = val->data.uint8_val;
 	} else if (strcmp(nodename, "frame-preemption-status") == 0) {
 		if (oper && *oper == SR_OP_DELETED)
 			*pt &= ~(1 << *tc);
-		else if (strcmp(val->data.string_val, "preemptable") == 0)
+		else if (strcmp(val->data.string_val, "preemptible") == 0)
 			*pt ^=  (1 << *tc);
 	} else {
 		rc = 1;
@@ -223,8 +223,8 @@ config_qbu:
 	}
 
 	if (rc < 0) {
-		snprintf(xpath, XPATH_MAX_LEN, "%s[name='%s']/%s:*//*",
-			 IF_XPATH, ifname, QBU_MODULE_NAME);
+		snprintf(xpath, XPATH_MAX_LEN, "%s[name='%s']/%s/%s:*//*",
+			 IF_XPATH, BR_PORT, ifname, QBU_MODULE_NAME);
 		snprintf(err_msg, MSG_MAX_LEN, "Set Qbu error: %s",
 			 strerror(-rc));
 		sr_set_error(session, err_msg, xpath);
@@ -276,8 +276,8 @@ int qbu_config(sr_session_ctx_t *session, const char *path, bool abort)
 		if (strcmp(ifname, ifname_bak)) {
 			snprintf(ifname_bak, IF_NAME_MAX_LEN, "%s", ifname);
 			snprintf(xpath, XPATH_MAX_LEN,
-				 "%s[name='%s']/%s:*//*", IF_XPATH, ifname,
-				 QBU_MODULE_NAME);
+				 "%s[name='%s']/%s/%s:*//*", IF_XPATH, BR_PORT,
+				 ifname, QBU_MODULE_NAME);
 			rc = config_qbu_per_port(session, xpath, abort, ifname);
 			if (rc != SR_ERR_OK)
 				break;
@@ -301,7 +301,7 @@ int qbu_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 	stc_cfg_flag = false;
 #endif
 
-	snprintf(xpath, XPATH_MAX_LEN, "%s/%s:*//*", IF_XPATH,
+	snprintf(xpath, XPATH_MAX_LEN, "%s/%s/%s:*//*", IF_XPATH, BR_PORT,
 		 QBU_MODULE_NAME);
 	switch (event) {
 	case SR_EV_VERIFY:
