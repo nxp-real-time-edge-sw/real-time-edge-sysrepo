@@ -207,7 +207,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Subscribe to QBU subtree */
-/*	snprintf(path, XPATH_MAX_LEN, "%s", IF_XPATH);
+	snprintf(path, XPATH_MAX_LEN, "%s", IF_XPATH);
 	strncat(path, BR_PORT, XPATH_MAX_LEN - strlen(path));
 	strncat(path, QBU_XPATH, XPATH_MAX_LEN - strlen(path));
 	opts = SR_SUBSCR_DEFAULT | SR_SUBSCR_CTX_REUSE | SR_SUBSCR_EV_ENABLED;
@@ -218,7 +218,7 @@ int main(int argc, char **argv)
 			sr_strerror(rc));
 		goto cleanup;
 	}
-*/
+
 	/* Subscribe to CB */
 /*	snprintf(path, XPATH_MAX_LEN, "%s", CB_XPATH);
 	opts = SR_SUBSCR_DEFAULT | SR_SUBSCR_CTX_REUSE | SR_SUBSCR_EV_ENABLED;
