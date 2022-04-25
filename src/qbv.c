@@ -464,6 +464,7 @@ int config_qbv_per_port(sr_session_ctx_t *session, char *path, bool abort,
 
 		printf("ERROR: %s sr_get_items: %s\n", __func__,
 		       sr_strerror(rc));
+		free_qbv_memory(qbvconf.qbvconf_ptr);
 		return rc;
 	}
 
