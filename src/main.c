@@ -96,6 +96,7 @@ void check_pid_file(void)
 			printf("Unable to lock sysrepo PID file '%s': %s.",
 			       pid_file, strerror(errno));
 		}
+		close(fd);
 		exit(1);
 	}
 
@@ -105,8 +106,11 @@ void check_pid_file(void)
 	if (-1 == ret) {
 		printf("ERR: Unable to write into sysrepo PID file '%s': %s.",
 		       pid_file, strerror(errno));
+		close(fd);
 		exit(1);
 	}
+
+	close(fd);
 }
 
 int main(int argc, char **argv)
