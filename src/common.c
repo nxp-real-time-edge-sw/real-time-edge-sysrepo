@@ -314,7 +314,7 @@ void pri2num(char *pri_str, int8_t *pri_num)
 		*pri_num = 6;
 	else if (!strcmp(pri_str, "seven"))
 		*pri_num = 7;
-	else if (!strcmp(pri_str, "wildcard"))
+	else if (!strcmp(pri_str, "null"))
 		*pri_num = -1;
 	else
 		*pri_num = -1;

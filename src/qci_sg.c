@@ -71,7 +71,7 @@ void clr_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 	} else if (!strcmp(nodename, "gate-state-value")) {
 		sr_xpath_recover(&xp_ctx);
 		index = sr_xpath_key_value(value->xpath,
-					   "admin-control-list",
+					   "gate-control-entry",
 					   "index", &xp_ctx);
 		u64_val = strtoul(index, NULL, 0);
 
@@ -79,7 +79,7 @@ void clr_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 	} else if (!strcmp(nodename, "ipv-value")) {
 		sr_xpath_recover(&xp_ctx);
 		index = sr_xpath_key_value(value->xpath,
-					   "admin-control-list",
+					   "gate-control-entry",
 					   "index", &xp_ctx);
 		u64_val = strtoul(index, NULL, 0);
 
@@ -87,7 +87,7 @@ void clr_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 	} else if (!strcmp(nodename, "time-interval-value")) {
 		sr_xpath_recover(&xp_ctx);
 		index = sr_xpath_key_value(value->xpath,
-					   "admin-control-list",
+					   "gate-control-entry",
 					   "index", &xp_ctx);
 		u64_val = strtoul(index, NULL, 0);
 
@@ -95,7 +95,7 @@ void clr_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 	} else if (!strcmp(nodename, "interval-octet-max")) {
 		sr_xpath_recover(&xp_ctx);
 		index = sr_xpath_key_value(value->xpath,
-					   "admin-control-list",
+					   "gate-control-entry",
 					   "index", &xp_ctx);
 		u64_val = strtoul(index, NULL, 0);
 
@@ -189,18 +189,15 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		gate->gate_state = sgi->sgconf.admin.gate_states;
 	} else if (!strcmp(nodename, "admin-ipv")) {
 		pri2num(value->data.enum_val, &sgi->sgconf.admin.init_ipv);
-	} else if (!strcmp(nodename, ADMIN_CTR_LIST_LEN)) {
-		u8_val = (uint8_t)value->data.int32_val;
-		sgi->sgconf.admin.control_list_length = u8_val;
-		gate->acl_len = MIN(u8_val, SUB_PARA_LEN);
 	} else if (!strcmp(nodename, "gate-state-value")) {
 		sr_xpath_recover(&xp_ctx);
 		index = sr_xpath_key_value(value->xpath,
-					   "admin-control-list",
+					   "gate-control-entry",
 					   "index", &xp_ctx);
 		u64_val = strtoul(index, NULL, 0);
 		if (u64_val >= sgi->sgconf.admin.control_list_length)
-			goto out;
+			sgi->sgconf.admin.control_list_length = u64_val + 1;
+		gate->acl_len = MIN(sgi->sgconf.admin.control_list_length, SUB_PARA_LEN);
 
 		num_str = value->data.enum_val;
 		if (!strcmp(num_str, "open")) {
@@ -216,14 +213,15 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 
 		if (u64_val < SUB_PARA_LEN)
 			acl[u64_val].state = (entry + u64_val)->gate_state;
-	} else if (!strcmp(nodename, "ipv-value")) {
+	} else if (!strcmp(nodename, "ipv-spec")) {
 		sr_xpath_recover(&xp_ctx);
 		index = sr_xpath_key_value(value->xpath,
-					   "admin-control-list",
+					   "gate-control-entry",
 					   "index", &xp_ctx);
 		u64_val = strtoul(index, NULL, 0);
 		if (u64_val >= sgi->sgconf.admin.control_list_length)
-			goto out;
+			sgi->sgconf.admin.control_list_length = u64_val + 1;
+		gate->acl_len = MIN(sgi->sgconf.admin.control_list_length, SUB_PARA_LEN);
 
 		pri2num(value->data.enum_val, &(entry + u64_val)->ipv);
 		if (u64_val < SUB_PARA_LEN)
@@ -231,11 +229,12 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 	} else if (!strcmp(nodename, "time-interval-value")) {
 		sr_xpath_recover(&xp_ctx);
 		index = sr_xpath_key_value(value->xpath,
-					   "admin-control-list",
+					   "gate-control-entry",
 					   "index", &xp_ctx);
 		u64_val = strtoul(index, NULL, 0);
 		if (u64_val >= sgi->sgconf.admin.control_list_length)
-			goto out;
+			sgi->sgconf.admin.control_list_length = u64_val + 1;
+		gate->acl_len = MIN(sgi->sgconf.admin.control_list_length, SUB_PARA_LEN);
 
 		(entry + u64_val)->time_interval = value->data.uint32_val;
 		if (u64_val < SUB_PARA_LEN)
@@ -243,11 +242,12 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 	} else if (!strcmp(nodename, "interval-octet-max")) {
 		sr_xpath_recover(&xp_ctx);
 		index = sr_xpath_key_value(value->xpath,
-					   "admin-control-list",
+					   "gate-control-entry",
 					   "index", &xp_ctx);
 		u64_val = strtoul(index, NULL, 0);
 		if (u64_val >= sgi->sgconf.admin.control_list_length)
-			goto out;
+			sgi->sgconf.admin.control_list_length = u64_val + 1;
+		gate->acl_len = MIN(sgi->sgconf.admin.control_list_length, SUB_PARA_LEN);
 
 		(entry + u64_val)->octet_max = value->data.uint32_val;
 	} else if (!strcmp(nodename, "numerator")) {
@@ -529,9 +529,9 @@ int config_sg(sr_session_ctx_t *session)
 				strerror(-rc));
 			snprintf(xpath, XPATH_MAX_LEN,
 				 "%s[name='%s']%s[%s='%u']//*",
-				 "stream-gate-instance-id",
 				 BRIDGE_COMPONENT_XPATH, cur_node->sf_ptr->port,
-				 SGI_XPATH, cur_node->sg_ptr->sg_id);
+				 SGI_XPATH, "stream-gate-instance-id",
+				 cur_node->sg_ptr->sg_id);
 			sr_set_error(session, err_msg, xpath);
 			cur_node->apply_st = APPLY_SET_ERR;
 			goto cleanup;

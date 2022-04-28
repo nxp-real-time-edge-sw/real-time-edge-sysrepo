@@ -43,7 +43,7 @@ char *get_interface_name(void)
 	return sqci_stream_para.ifname;
 }
 
-struct std_cb_stream_list *new_stream_list_node(char *port, uint32_t index)
+struct std_cb_stream_list *new_stream_list_node(uint32_t index)
 {
 	struct std_cb_stream_list *stream_list;
 	struct std_cb_stream *stream_ptr;
@@ -60,7 +60,6 @@ struct std_cb_stream_list *new_stream_list_node(char *port, uint32_t index)
 
 	stream_list->stream_ptr = stream_ptr;
 	stream_list->apply_st = APPLY_NONE;
-	snprintf(stream_list->stream_ptr->port, IF_NAME_MAX_LEN, "%s", port);
 	stream_list->stream_ptr->index = index;
 	stream_list->next = NULL;
 	stream_list->pre = NULL;
@@ -92,13 +91,12 @@ void free_stream_list(struct std_cb_stream_list *l_head)
 }
 
 struct std_cb_stream_list *find_stream_in_list(struct std_cb_stream_list *list,
-		char *port, uint32_t index)
+					       uint32_t index)
 {
 	struct std_cb_stream_list *node = list;
 
 	while (node) {
-		if (!strncmp(port, node->stream_ptr->port, IF_NAME_MAX_LEN)
-		    && (node->stream_ptr->index == index))
+		if (node->stream_ptr->index == index)
 			goto out;
 		else
 			node = node->next;
@@ -212,61 +210,42 @@ void clr_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 	if (!nodename)
 		return;
 
-	if (!strcmp(nodename, "stream-id-enabled")) {
+	if (!strcmp(nodename, "handle")) {
 		stream->enable = false;
-	} else if (!strcmp(nodename, "stream-handle")) {
 		stream->cbconf.handle = 0;
-	} else if (!strcmp(nodename, "in-facing-output-port-list")) {
-		stream->cbconf.ifac_oport = 0;
-	} else if (!strcmp(nodename, "out-facing-output-port-list")) {
-		stream->cbconf.ofac_oport = 0;
-	} else if (!strcmp(nodename, "in-facing-input-port-list")) {
-		stream->cbconf.ifac_iport = 0;
-	} else if (!strcmp(nodename, "out-facing-input-port-list")) {
-		stream->cbconf.ofac_iport = 0;
-	} else if (!strcmp(nodename, "identification-type")) {
+	} else if (!strcmp(nodename, "input-port")) {
+		sr_xpath_recover(&xp_ctx);
+		if (sr_xpath_node(value->xpath, "in-facing", &xp_ctx))
+			stream->cbconf.ifac_iport = 0;
+		else
+			stream->cbconf.ofac_iport = 0;
+	} else if (!strcmp(nodename, "output-port")) {
+		sr_xpath_recover(&xp_ctx);
+		if (sr_xpath_node(value->xpath, "in-facing", &xp_ctx))
+			stream->cbconf.ifac_oport = 0;
+		else
+			stream->cbconf.ofac_oport = 0;
+	} else if (!strcmp(nodename, "type-number")) {
 		stream->cbconf.type = 0;
-	} else if (!strcmp(nodename, "lan-path-id")) {
-	} else if (!strcmp(nodename, "dest-address")) {
+	} else if (!strcmp(nodename, "destination-mac")) {
 		if (stream->cbconf.type == STREAMID_IP)
 			stream->cbconf.para.iid.dmac = 0;
 		else if (stream->cbconf.type == STREAMID_NULL)
 			stream->cbconf.para.nid.dmac = 0;
-	} else if (!strcmp(nodename, "source-address")) {
+	} else if (!strcmp(nodename, "source-mac")) {
 		stream->cbconf.para.sid.smac = 0;
-	} else if (!strcmp(nodename, "vlan-tagged")) {
+	} else if (!strcmp(nodename, "tagged")) {
 		if (stream->cbconf.type == STREAMID_SMAC_VLAN)
 			stream->cbconf.para.sid.tagged = 0;
 		else if (stream->cbconf.type == STREAMID_NULL)
 			stream->cbconf.para.nid.tagged = 0;
-	} else if (!strcmp(nodename, "vlan-id")) {
+	} else if (!strcmp(nodename, "vlan")) {
 		if (stream->cbconf.type == STREAMID_NULL)
 			stream->cbconf.para.nid.vid = 0;
 		else if (stream->cbconf.type == STREAMID_SMAC_VLAN)
 			stream->cbconf.para.sid.vid = 0;
 		else if (stream->cbconf.type == STREAMID_IP)
 			stream->cbconf.para.iid.vid = 0;
-	} else if (!strcmp(nodename, "down-dest-address")) {
-		stream->cbconf.para.did.down_dmac = 0;
-	} else if (!strcmp(nodename, "down-vlan-tagged")) {
-		if (stream->cbconf.type == STREAMID_DMAC_VLAN)
-			stream->cbconf.para.did.down_tagged = 0;
-		else if (stream->cbconf.type == STREAMID_IP)
-			stream->cbconf.para.iid.tagged = 0;
-	} else if (!strcmp(nodename, "down-vlan-id")) {
-		stream->cbconf.para.did.down_vid = 0;
-	} else if (!strcmp(nodename, "down-priority")) {
-		stream->cbconf.para.did.down_prio = 0;
-	} else if (!strcmp(nodename, "up-dest-address")) {
-		stream->cbconf.para.did.up_dmac = 0;
-	} else if (!strcmp(nodename, "up-vlan-tagged")) {
-		stream->cbconf.para.did.up_tagged = 0;
-	} else if (!strcmp(nodename, "up-vlan-id")) {
-		stream->cbconf.para.did.up_vid = 0;
-	} else if (!strcmp(nodename, "up-priority")) {
-		stream->cbconf.para.did.down_prio = 0;
-	} else if (!strcmp(nodename, "ipv4-address")) {
-	} else if (!strcmp(nodename, "ipv6-address")) {
 	} else if (!strcmp(nodename, "dscp")) {
 		stream->cbconf.para.iid.dscp = 0;
 	} else if (!strcmp(nodename, "next-protocol")) {
@@ -301,28 +280,31 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 	if (!nodename)
 		goto out;
 
-	if (!strcmp(nodename, "stream-id-enabled")) {
-		stream->enable = value->data.bool_val;
-		para->enable = value->data.bool_val;
-	} else if (!strcmp(nodename, "stream-handle")) {
+	stream->enable = 1;
+	para->enable = 1;
+	if (!strcmp(nodename, "handle")) {
 		stream->cbconf.handle = value->data.uint32_val;
-	} else if (!strcmp(nodename, "in-facing-output-port-list")) {
-		stream->cbconf.ifac_oport = value->data.uint32_val;
-	} else if (!strcmp(nodename, "out-facing-output-port-list")) {
-		stream->cbconf.ofac_oport = value->data.uint32_val;
-	} else if (!strcmp(nodename, "in-facing-input-port-list")) {
-		stream->cbconf.ifac_iport = value->data.uint32_val;
-	} else if (!strcmp(nodename, "out-facing-input-port-list")) {
-		stream->cbconf.ofac_iport = value->data.uint32_val;
-	} else if (!strcmp(nodename, "identification-type")) {
+	} else if (!strcmp(nodename, "input-port")) {
+		sr_xpath_recover(&xp_ctx);
+		if (sr_xpath_node(value->xpath, "in-facing", &xp_ctx))
+			stream->cbconf.ifac_iport = value->data.uint32_val;
+		else
+			stream->cbconf.ofac_iport = value->data.uint32_val;
+	} else if (!strcmp(nodename, "output-port")) {
+		sr_xpath_recover(&xp_ctx);
+		if (sr_xpath_node(value->xpath, "in-facing", &xp_ctx))
+			stream->cbconf.ifac_oport = value->data.uint32_val;
+		else
+			stream->cbconf.ofac_oport = value->data.uint32_val;
+	} else if (!strcmp(nodename, "type-number")) {
 		num_str = value->data.enum_val;
-		if (!strcmp(num_str, "null")) {
+		if (!strcmp(num_str, "null-stream")) {
 			stream->cbconf.type = STREAMID_NULL;
-		} else if (!strcmp(num_str, "source-mac-and-vlan")) {
+		} else if (!strcmp(num_str, "smac-vlan")) {
 			stream->cbconf.type = STREAMID_SMAC_VLAN;
-		} else if (!strcmp(num_str, "dest-mac-and-vlan")) {
+		} else if (!strcmp(num_str, "dmac-vlan")) {
 			stream->cbconf.type = STREAMID_DMAC_VLAN;
-		} else if (!strcmp(num_str, "ip-octuple")) {
+		} else if (!strcmp(num_str, "ip")) {
 			stream->cbconf.type = STREAMID_IP;
 		} else {
 			snprintf(err_msg, MSG_MAX_LEN, "Invalid '%s'", num_str);
@@ -333,8 +315,7 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 			rc = SR_ERR_INVAL_ARG;
 			goto out;
 		}
-	} else if (!strcmp(nodename, "lan-path-id")) {
-	} else if (!strcmp(nodename, "dest-address")) {
+	} else if (!strcmp(nodename, "destination-mac")) {
 		rc = parse_mac_address(value->data.string_val, &u64_val,
 				       err_msg, value->xpath);
 		if (rc != SR_ERR_OK) {
@@ -347,8 +328,15 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 			stream->cbconf.para.iid.dmac = u64_val;
 		else if (stream->cbconf.type == STREAMID_NULL)
 			stream->cbconf.para.nid.dmac = u64_val;
+
+		sr_xpath_recover(&xp_ctx);
+		if (sr_xpath_node(value->xpath, "down", &xp_ctx))
+			stream->cbconf.para.did.down_dmac = u64_val;
+		else if (sr_xpath_node(value->xpath, "up", &xp_ctx))
+			stream->cbconf.para.did.up_dmac = u64_val;
+
 		para->dmac = u64_val;
-	} else if (!strcmp(nodename, "source-address")) {
+	} else if (!strcmp(nodename, "source-mac")) {
 		rc = parse_mac_address(value->data.string_val, &u64_val,
 				       err_msg, value->xpath);
 		if (rc != SR_ERR_OK) {
@@ -358,7 +346,7 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 		}
 		stream->cbconf.para.sid.smac = u64_val;
 		para->smac = u64_val;
-	} else if (!strcmp(nodename, "vlan-tagged")) {
+	} else if (!strcmp(nodename, "tagged")) {
 		rc = parse_vlan_tag(session, value, &u8_val);
 		if (rc != SR_ERR_OK)
 			goto out;
@@ -367,7 +355,18 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 			stream->cbconf.para.sid.tagged = u8_val;
 		else if (stream->cbconf.type == STREAMID_NULL)
 			stream->cbconf.para.nid.tagged = u8_val;
-	} else if (!strcmp(nodename, "vlan-id")) {
+
+		sr_xpath_recover(&xp_ctx);
+		if (sr_xpath_node(value->xpath, "down", &xp_ctx)) {
+			if (stream->cbconf.type == STREAMID_DMAC_VLAN)
+				stream->cbconf.para.did.down_tagged = u8_val;
+			else if (stream->cbconf.type == STREAMID_IP)
+				stream->cbconf.para.iid.tagged = u8_val;
+		}
+		else if (sr_xpath_node(value->xpath, "up", &xp_ctx)) {
+			stream->cbconf.para.did.up_tagged = u8_val;
+		}
+	} else if (!strcmp(nodename, "vlan")) {
 		u16_val = value->data.uint16_val;
 		if (stream->cbconf.type == STREAMID_NULL)
 			stream->cbconf.para.nid.vid = u16_val;
@@ -376,48 +375,21 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 		else if (stream->cbconf.type == STREAMID_IP)
 			stream->cbconf.para.iid.vid = u16_val;
 		para->vid = u16_val;
-	} else if (!strcmp(nodename, "down-dest-address")) {
-		rc = parse_mac_address(value->data.string_val, &u64_val,
-				       err_msg, value->xpath);
-		if (rc != SR_ERR_OK) {
-			sr_set_error(session, err_msg, value->xpath);
-			printf("%s\n", err_msg);
-			goto out;
-		}
-		stream->cbconf.para.did.down_dmac = u64_val;
-	} else if (!strcmp(nodename, "down-vlan-tagged")) {
-		rc = parse_vlan_tag(session, value, &u8_val);
-		if (rc != SR_ERR_OK)
-			goto out;
 
-		if (stream->cbconf.type == STREAMID_DMAC_VLAN)
-			stream->cbconf.para.did.down_tagged = u8_val;
-		else if (stream->cbconf.type == STREAMID_IP)
-			stream->cbconf.para.iid.tagged = u8_val;
-	} else if (!strcmp(nodename, "down-vlan-id")) {
-		stream->cbconf.para.did.down_vid = value->data.uint16_val;
-	} else if (!strcmp(nodename, "down-priority")) {
-		stream->cbconf.para.did.down_prio = value->data.uint8_val;
-	} else if (!strcmp(nodename, "up-dest-address")) {
-		rc = parse_mac_address(value->data.string_val, &u64_val,
-				       err_msg, value->xpath);
-		if (rc != SR_ERR_OK) {
-			sr_set_error(session, err_msg, value->xpath);
-			printf("%s\n", err_msg);
-			goto out;
-		}
-		stream->cbconf.para.did.up_dmac = u64_val;
-	} else if (!strcmp(nodename, "up-vlan-tagged")) {
-		rc = parse_vlan_tag(session, value, &u8_val);
-		if (rc != SR_ERR_OK)
-			goto out;
+		sr_xpath_recover(&xp_ctx);
+		if (sr_xpath_node(value->xpath, "down", &xp_ctx))
+			stream->cbconf.para.did.down_vid = value->data.uint16_val;
+		else if (sr_xpath_node(value->xpath, "up", &xp_ctx))
+			stream->cbconf.para.did.up_vid = value->data.uint16_val;
 
-		stream->cbconf.para.did.up_tagged = u8_val;
-	} else if (!strcmp(nodename, "up-vlan-id")) {
-		stream->cbconf.para.did.up_vid = value->data.uint16_val;
-	} else if (!strcmp(nodename, "up-priority")) {
-		stream->cbconf.para.did.down_prio = value->data.uint8_val;
-	} else if (!strcmp(nodename, "ipv4-address")) {
+	} else if (!strcmp(nodename, "priority")) {
+		sr_xpath_recover(&xp_ctx);
+		if (sr_xpath_node(value->xpath, "down", &xp_ctx))
+			stream->cbconf.para.did.down_prio = value->data.uint8_val;
+		else if (sr_xpath_node(value->xpath, "up", &xp_ctx))
+			stream->cbconf.para.did.up_prio = value->data.uint8_val;
+
+	} else if (!strcmp(nodename, "ip-source")) {
 		struct in_addr i4_addr;
 
 		rc = inet_pton(AF_INET, value->data.string_val, &i4_addr);
@@ -426,10 +398,10 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 			goto out;
 		}
 		para->i4_addr.s_addr = i4_addr.s_addr;
-	} else if (!strcmp(nodename, "ipv6-address")) {
-		struct in6_addr i6_addr;
+	} else if (!strcmp(nodename, "ip-destination")) {
+		struct in_addr i4_addr;
 
-		rc = inet_pton(AF_INET6, value->data.string_val, &i6_addr);
+		rc = inet_pton(AF_INET, value->data.string_val, &i4_addr);
 		if (rc != 1) {
 			rc = SR_ERR_INVAL_ARG;
 			goto out;
@@ -438,18 +410,16 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 		stream->cbconf.para.iid.dscp = value->data.uint8_val;
 	} else if (!strcmp(nodename, "next-protocol")) {
 		num_str = value->data.enum_val;
-		if (!strcmp(num_str, "UDP"))
+		if (!strcmp(num_str, "udp"))
 			stream->cbconf.para.iid.npt = 0;
-		else if (!strcmp(num_str, "TCP"))
+		else if (!strcmp(num_str, "tcp"))
 			stream->cbconf.para.iid.npt = 1;
-		else if (!strcmp(num_str, "SCTP"))
+		else if (!strcmp(num_str, "sctp"))
 			stream->cbconf.para.iid.npt = 2;
-		else if (!strcmp(num_str, "none"))
-			stream->cbconf.para.iid.npt = 3;
 	} else if (!strcmp(nodename, "source-port")) {
 		stream->cbconf.para.iid.dscp = value->data.uint16_val;
 		para->sport = value->data.uint16_val;
-	} else if (!strcmp(nodename, "dest-port")) {
+	} else if (!strcmp(nodename, "destination-port")) {
 		stream->cbconf.para.iid.dscp = value->data.uint16_val;
 		para->dport = value->data.uint16_val;
 	}
@@ -501,7 +471,7 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 			continue;
 
 		index = sr_xpath_key_value(value->xpath,
-					    "stream-identity-table", "index",
+					    "stream-identity", "index",
 					    &xp_ctx_id);
 
 		if ((!index) || !strncmp(index, index_bak, IF_NAME_MAX_LEN))
@@ -510,16 +480,9 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		snprintf(index_bak, IF_NAME_MAX_LEN, "%s", index);
 
 		stream_id = strtoul(index, NULL, 0);
-		cpname = sr_xpath_key_value(value->xpath, "component",
-					    "name", &xp_ctx_cp);
-		if (!cpname)
-			continue;
-
-		snprintf(sqci_stream_para.ifname, IF_NAME_MAX_LEN, "%s", cpname);
 
 		if (!stream_head) {
-			stream_head = new_stream_list_node(cpname,
-							   stream_id);
+			stream_head = new_stream_list_node(stream_id);
 			if (!stream_head) {
 				snprintf(err_msg, MSG_MAX_LEN, "%s in %s\n",
 					 "Create new node failed",
@@ -530,9 +493,9 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 			}
 			continue;
 		}
-		cur_node = find_stream_in_list(stream_head, cpname, stream_id);
+		cur_node = find_stream_in_list(stream_head, stream_id);
 		if (!cur_node) {
-			cur_node = new_stream_list_node(cpname, stream_id);
+			cur_node = new_stream_list_node(stream_id);
 			if (!cur_node) {
 				snprintf(err_msg, MSG_MAX_LEN, "%s in %s\n",
 					 "Create new node failed",
@@ -604,10 +567,8 @@ int parse_streamid_per_port_per_id(sr_session_ctx_t *session, bool abort)
 
 	while (cur_node) {
 		snprintf(xpath, XPATH_MAX_LEN,
-			 "%s[name='%s']%s[index='%u']//*",
-			 BRIDGE_COMPONENT_XPATH, cur_node->stream_ptr->port,
-			 CB_STREAMID_TABLE_XPATH,
-			 cur_node->stream_ptr->index);
+			 "%s[index='%u']//*",
+			 CB_STREAMID_XPATH, cur_node->stream_ptr->index);
 		if (abort) {
 			rc = abort_streamid_config(session, xpath, cur_node);
 			if (rc != SR_ERR_OK)
@@ -692,10 +653,8 @@ int config_streamid(sr_session_ctx_t *session)
 				"failed to set stream-id, %s!",
 				strerror(-rc));
 			snprintf(xpath, XPATH_MAX_LEN,
-				 "%s[name='%s']%s[index='%u']//*",
-				 BRIDGE_COMPONENT_XPATH,
-				 cur_node->stream_ptr->port,
-				 CB_STREAMID_TABLE_XPATH,
+				 "%s[index='%u']//*",
+				 CB_STREAMID_XPATH,
 				 cur_node->stream_ptr->index);
 			sr_set_error(session, err_msg, xpath);
 			cur_node->apply_st = APPLY_SET_ERR;
@@ -880,8 +839,7 @@ int cb_streamid_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0,};
 
-	snprintf(xpath, XPATH_MAX_LEN, "%s/%s:*//*", BRIDGE_COMPONENT_XPATH,
-		 CB_STREAMID_MODULE_NAME);
+	snprintf(xpath, XPATH_MAX_LEN, "%s/*//*", CB_STREAMID_XPATH);
 
 #ifdef SYSREPO_TSN_TC
 	stc_cfg_flag = true;

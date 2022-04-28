@@ -24,8 +24,8 @@
 #include <tsn/genl_tsn.h>
 #include "common.h"
 
-#define CB_STREAMID_XPATH "/ieee802-dot1q-cb-stream-identification:streams"
-#define CB_STREAMID_MODULE_NAME "ieee802-dot1q-cb-stream-identification"
+#define CB_STREAMID_XPATH "/ieee802-dot1cb-stream-identification:stream-identity"
+#define CB_STREAMID_MODULE_NAME "ieee802-dot1cb-stream-identification"
 #define CB_STREAMID_TABLE_XPATH (CB_STREAMID_XPATH "/stream-identity-table")
 
 struct std_cb_stream {

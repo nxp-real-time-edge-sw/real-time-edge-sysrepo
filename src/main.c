@@ -254,32 +254,31 @@ int main(int argc, char **argv)
 	}
 */
 	/* Subscribe to QCI-Stream-Filter subtree */
-/*	snprintf(path, XPATH_MAX_LEN, "%s", BRIDGE_COMPONENT_XPATH);
+	snprintf(path, XPATH_MAX_LEN, "%s", BRIDGE_COMPONENT_XPATH);
 	strncat(path, QCISF_XPATH, XPATH_MAX_LEN - strlen(path));
 	opts = SR_SUBSCR_DEFAULT | SR_SUBSCR_CTX_REUSE | SR_SUBSCR_EV_ENABLED;
 	rc = sr_subtree_change_subscribe(session, path,
 					 qci_sf_subtree_change_cb,
 					 NULL, 0, opts, &bridge_subscription);
-*/
+
 	/* Subscribe to QCI-Stream-Gate subtree */
-/*	snprintf(path, XPATH_MAX_LEN, "%s", BRIDGE_COMPONENT_XPATH);
+	snprintf(path, XPATH_MAX_LEN, "%s", BRIDGE_COMPONENT_XPATH);
 	strncat(path, QCISG_XPATH, XPATH_MAX_LEN - strlen(path));
 	opts = SR_SUBSCR_DEFAULT | SR_SUBSCR_CTX_REUSE | SR_SUBSCR_EV_ENABLED;
 	rc = sr_subtree_change_subscribe(session, path,
 					 qci_sg_subtree_change_cb,
 					 NULL, 0, opts, &bridge_subscription);
-*/
+
 	/* Subscribe to QCI-Flow-Meter subtree */
-/*	snprintf(path, XPATH_MAX_LEN, "%s", BRIDGE_COMPONENT_XPATH);
+	snprintf(path, XPATH_MAX_LEN, "%s", BRIDGE_COMPONENT_XPATH);
 	strncat(path, QCIFM_XPATH, XPATH_MAX_LEN - strlen(path));
 	opts = SR_SUBSCR_DEFAULT | SR_SUBSCR_CTX_REUSE | SR_SUBSCR_EV_ENABLED;
 	rc = sr_subtree_change_subscribe(session, path,
 					 qci_fm_subtree_change_cb,
 					 NULL, 0, opts, &bridge_subscription);
-*/
+
 	/* Subscribe to CB-StreamID subtree */
-/*	snprintf(path, XPATH_MAX_LEN, "%s", BRIDGE_COMPONENT_XPATH);
-	strncat(path, CB_STREAMID_XPATH, XPATH_MAX_LEN - strlen(path));
+	snprintf(path, XPATH_MAX_LEN, "%s", CB_STREAMID_XPATH);
 	opts = SR_SUBSCR_DEFAULT | SR_SUBSCR_CTX_REUSE | SR_SUBSCR_EV_ENABLED;
 	rc = sr_subtree_change_subscribe(session, path,
 					 cb_streamid_subtree_change_cb,
@@ -290,7 +289,7 @@ int main(int argc, char **argv)
 			sr_strerror(rc));
 		goto cleanup;
 	}
-*/
+
 	/* Subscribe to VLAN_CFG subtree */
 /*	snprintf(path, XPATH_MAX_LEN, "%s", BRIDGE_COMPONENT_XPATH);
 	strncat(path, BR_VLAN_XPATH, XPATH_MAX_LEN - 1 - strlen(path));
