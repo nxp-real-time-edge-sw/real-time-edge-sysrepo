@@ -105,6 +105,20 @@ out:
 	return node;
 }
 
+struct std_cb_stream_list *find_stream_handle(uint32_t handle)
+{
+	struct std_cb_stream_list *node = stream_head;
+
+	while (node) {
+		if (node->stream_ptr->cbconf.handle == handle)
+			goto out;
+		else
+			node = node->next;
+	}
+out:
+	return node;
+}
+
 void add_stream2list(struct std_cb_stream_list *list,
 		struct std_cb_stream_list *node)
 {
@@ -274,6 +288,7 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 	char *nodename;
 	char *num_str;
 	char err_msg[MSG_MAX_LEN] = {0};
+	int port;
 
 	sr_xpath_recover(&xp_ctx);
 	nodename = sr_xpath_node_name(value->xpath);
@@ -285,36 +300,36 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 	if (!strcmp(nodename, "handle")) {
 		stream->cbconf.handle = value->data.uint32_val;
 	} else if (!strcmp(nodename, "input-port")) {
-		sr_xpath_recover(&xp_ctx);
-		if (sr_xpath_node(value->xpath, "in-facing", &xp_ctx))
-			stream->cbconf.ifac_iport = value->data.uint32_val;
+		if (strstr(value->data.string_val, "swp"))
+			port = value->data.string_val[3] - '0';
 		else
-			stream->cbconf.ofac_iport = value->data.uint32_val;
-	} else if (!strcmp(nodename, "output-port")) {
-		sr_xpath_recover(&xp_ctx);
-		if (sr_xpath_node(value->xpath, "in-facing", &xp_ctx))
-			stream->cbconf.ifac_oport = value->data.uint32_val;
-		else
-			stream->cbconf.ofac_oport = value->data.uint32_val;
-	} else if (!strcmp(nodename, "type-number")) {
-		num_str = value->data.enum_val;
-		if (!strcmp(num_str, "null-stream")) {
-			stream->cbconf.type = STREAMID_NULL;
-		} else if (!strcmp(num_str, "smac-vlan")) {
-			stream->cbconf.type = STREAMID_SMAC_VLAN;
-		} else if (!strcmp(num_str, "dmac-vlan")) {
-			stream->cbconf.type = STREAMID_DMAC_VLAN;
-		} else if (!strcmp(num_str, "ip")) {
-			stream->cbconf.type = STREAMID_IP;
-		} else {
-			snprintf(err_msg, MSG_MAX_LEN, "Invalid '%s'", num_str);
-			sr_set_error(session, err_msg, value->xpath);
+			port = 0;
 
-			printf("ERROR: Invalid '%s' in %s!\n", num_str,
-			       value->xpath);
-			rc = SR_ERR_INVAL_ARG;
-			goto out;
-		}
+		sr_xpath_recover(&xp_ctx);
+		if (sr_xpath_node(value->xpath, "in-facing", &xp_ctx))
+			stream->cbconf.ifac_iport = port;
+		else
+			stream->cbconf.ofac_iport = port;
+	} else if (!strcmp(nodename, "output-port")) {
+		strcpy(stream->port, value->data.string_val);
+		if (strstr(value->data.string_val, "swp"))
+			port = value->data.string_val[3] - '0';
+		else
+			port = 0;
+
+		sr_xpath_recover(&xp_ctx);
+		if (sr_xpath_node(value->xpath, "in-facing", &xp_ctx))
+			stream->cbconf.ifac_oport = port;
+		else
+			stream->cbconf.ofac_oport = port;
+	} else if (!strcmp(nodename, "null-stream-identification")) {
+		stream->cbconf.type = STREAMID_NULL;
+	} else if (!strcmp(nodename, "smac-vlan-stream-identification")) {
+		stream->cbconf.type = STREAMID_SMAC_VLAN;
+	} else if (!strcmp(nodename, "dmac-vlan-stream-identification")) {
+		stream->cbconf.type = STREAMID_DMAC_VLAN;
+	} else if (!strcmp(nodename, "ip-stream-identification")) {
+		stream->cbconf.type = STREAMID_IP;
 	} else if (!strcmp(nodename, "destination-mac")) {
 		rc = parse_mac_address(value->data.string_val, &u64_val,
 				       err_msg, value->xpath);
@@ -857,6 +872,7 @@ int cb_streamid_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 		rc = cb_streamid_config(session, xpath, false);
 		break;
 	case SR_EV_APPLY:
+		usleep(100000);
 		free_stream_list(stream_head);
 		stream_head = NULL;
 		break;

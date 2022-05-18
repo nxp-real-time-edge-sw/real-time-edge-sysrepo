@@ -45,4 +45,6 @@ struct std_cb_stream_list {
 int cb_streamid_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 		sr_notif_event_t event, void *private_ctx);
 
+struct std_cb_stream_list *find_stream_handle(uint32_t handle);
+
 #endif

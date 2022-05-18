@@ -19,30 +19,33 @@
  */
 
 #include "cb.h"
+#include "cb_streamid.h"
 #define NULL_CB (0)
 #define CBREC (1)
 #define CBGEN (2)
 
-struct item_cfg {
-	int his_len;
-	int ind;
-	char port[20];
-	char genport[20];
-	unsigned int input_id_list[10];
-	unsigned int output_id_list[10];
-	int cb_flag;
+struct cb_para {
+	int index;
+	int streamhandle;
+	bool gen;
+	union {
+		struct tsn_seq_gen_conf *cbgen;
+		struct tsn_seq_rec_conf *cbrec;
+	};
 };
-static struct item_cfg sitem_conf;
 
-static int parse_node(sr_session_ctx_t *session, sr_val_t *value,
-			struct item_cfg *conf)
+static struct cb_para cb_node;
+
+static int parse_node(sr_session_ctx_t *session, sr_val_t *value)
 {
 	int rc = SR_ERR_OK;
 	sr_xpath_ctx_t xp_ctx = {0};
 	char *nodename = NULL;
 	char port_path[100];
+	int handle;
+	struct std_cb_stream_list *cb_stream;
 
-	if (!session || !value || !conf)
+	if (!session || !value)
 		return rc;
 
 	sr_xpath_recover(&xp_ctx);
@@ -50,31 +53,49 @@ static int parse_node(sr_session_ctx_t *session, sr_val_t *value,
 	if (!nodename)
 		goto ret_tag;
 
-	if (!strcmp(nodename, "history-length")) {
-		conf->his_len = value->data.uint8_val;
-	} else if (!strcmp(nodename, "index")) {
-		conf->ind = value->data.uint8_val;
-	} else if (!strcmp(nodename, "port-list")) {
-		if (strlen(value->data.string_val) < 20)
-			strcpy(conf->port, value->data.string_val);
-	} else if (!strcmp(nodename, "output-id-list")) {
-		if (value->data.uint8_val < 10)
-			conf->output_id_list[value->data.uint8_val] = value->data.uint8_val + 1;
-	} else if (!strcmp(nodename, "port")) {
-		strncpy(port_path, value->xpath, strlen(PPATH));
-		if (strlen(value->data.string_val) < 20)
-			strcpy(conf->genport, value->data.string_val);
-	} else if (!strcmp(nodename, "input-id-list")) {
-		if (value->data.uint8_val < 10)
-			conf->input_id_list[value->data.uint8_val] = value->data.uint8_val + 1;
+	sr_xpath_recover(&xp_ctx);
+	if (sr_xpath_node(value->xpath, "sequence-generation", &xp_ctx)) {
+		cb_node.gen = 1;
+		if (!cb_node.cbgen)
+			cb_node.cbgen = calloc(1, sizeof(struct tsn_seq_gen_conf));
+		if (!cb_node.cbgen)
+			return -1;
+
+		if (!strcmp(nodename, "index")) {
+			cb_node.index = value->data.uint8_val;
+		} else if (!strcmp(nodename, "stream")) {
+			cb_node.streamhandle = value->data.uint8_val;
+		}
+	} else if (sr_xpath_node(value->xpath, "stream-split", &xp_ctx)) {
+		if (!strcmp(nodename, "port")) {
+			if (!strstr(value->data.string_val, "swp"))
+				return -1;
+			cb_node.cbgen->iport_mask =
+				1 << (value->data.string_val[3] - '0');
+		} else if (!strcmp(nodename, "output-id")) {
+			handle = value->data.uint8_val;
+			cb_stream = find_stream_handle(handle);
+			if (!cb_stream)
+				return -1;
+			cb_node.cbgen->split_mask |=
+				1 << cb_stream->stream_ptr->cbconf.ofac_oport;
+		}
+	} else if (sr_xpath_node(value->xpath, "sequence-recovery", &xp_ctx)) {
+		cb_node.gen = 0;
+		if (!cb_node.cbrec)
+			cb_node.cbrec = calloc(1, sizeof(struct tsn_seq_rec_conf));
+		if (!cb_node.cbrec)
+			return -1;
+		if (!strcmp(nodename, "history-length")) {
+			cb_node.cbrec->his_len = value->data.uint8_val;
+		}
 	}
 
 ret_tag:
 	return rc;
 }
 
-static int parse_item(sr_session_ctx_t *session, char *path,
-			struct item_cfg *conf)
+static int parse_item(sr_session_ctx_t *session, char *path)
 {
 	size_t i;
 	size_t count;
@@ -111,16 +132,7 @@ static int parse_item(sr_session_ctx_t *session, char *path,
 		if (values[i].type == SR_LIST_T
 		    || values[i].type == SR_CONTAINER_PRESENCE_T)
 			continue;
-		rc = parse_node(session, &values[i], conf);
-	}
-
-	if (conf->ind && conf->his_len && strlen(conf->port) > 0) {
-		conf->cb_flag = CBREC;
-	} else if (conf->ind && !conf->his_len && strlen(conf->genport) > 0) {
-		conf->cb_flag = CBGEN;
-	} else {
-		conf->cb_flag = NULL_CB;
-		printf("ERROR : invalid file\n");
+		rc = parse_node(session, &values[i]);
 	}
 
 cleanup:
@@ -139,9 +151,6 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 	sr_change_iter_t *it = NULL;
 	char xpath[XPATH_MAX_LEN] = {0};
 	char err_msg[MSG_MAX_LEN] = {0};
-	struct item_cfg *conf = &sitem_conf;
-
-	memset(conf, 0, sizeof(struct item_cfg));
 
 	snprintf(xpath, XPATH_MAX_LEN, "%s//*", path);
 	rc = sr_get_changes_iter(session, xpath, &it);
@@ -160,7 +169,7 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 		if (!value)
 			continue;
 
-		rc = parse_item(session, xpath, conf);
+		rc = parse_item(session, xpath);
 		if (rc != SR_ERR_OK)
 			break;
 	}
@@ -174,60 +183,27 @@ cleanup:
 
 void cbrec_execute(void)
 {
-	struct tsn_seq_rec_conf cbrecy;
-	struct tsn_seq_rec_conf *recy = &cbrecy;
-	struct item_cfg *conf = &sitem_conf;
+	struct tsn_seq_rec_conf *cbrec = cb_node.cbrec;
+	char *port = "swp0";
 
-	memset(&cbrecy, 0, sizeof(cbrecy));
-	cbrecy.seq_len = 16;
-	cbrecy.his_len = conf->his_len;
-	cbrecy.rtag_pop_en = 1;
+	cbrec->seq_len = 16;
+	cbrec->rtag_pop_en = 1;
 
 	init_tsn_socket();
-	tsn_cbrec_set(conf->port, conf->ind, recy);
+	tsn_cbrec_set(port, cb_node.index, cbrec);
 	close_tsn_socket();
 }
 
 void cbgen_execute(void)
 {
-	struct tsn_seq_gen_conf cbgenr;
-	struct tsn_seq_gen_conf *genr = &cbgenr;
-	struct item_cfg *conf = &sitem_conf;
-	int iport_mask = 0;
-	int split_mask = 0;
-	int index = 0;
-	int num = 0;
-	int index_in = 0;
-	int num_in = 0;
+	struct tsn_seq_gen_conf *cbgen = cb_node.cbgen;
+	char *port = "swp0";
 
-	memset(&cbgenr, 0, sizeof(cbgenr));
-	for (index = 0; index < 10; index++) {
-		if (conf->output_id_list[index] != 0) {
-			conf->output_id_list[index] = conf->output_id_list[index] - 1;
-			conf->output_id_list[index] = 0x01 << conf->output_id_list[index];
-		}
-	}
-
-	for (num = 0; num < 10; num++)
-		split_mask = split_mask + conf->output_id_list[num];
-
-	for (index_in = 0; index_in < 10; index_in++) {
-		if (conf->input_id_list[index_in] != 0) {
-			conf->input_id_list[index_in] = conf->input_id_list[index_in] - 1;
-			conf->input_id_list[index_in] = 0x01 << conf->input_id_list[index_in];
-		}
-	}
-
-	for (num_in = 0; num_in < 10; num_in++)
-		iport_mask = iport_mask + conf->input_id_list[num_in];
-
-	cbgenr.seq_len = 16;
-	cbgenr.seq_num = 2048;
-	cbgenr.iport_mask = iport_mask;
-	cbgenr.split_mask = split_mask;
+	cbgen->seq_len = 16;
+	cbgen->seq_num = 2048;
 
 	init_tsn_socket();
-	tsn_cbgen_set(conf->genport, conf->ind, genr);
+	tsn_cbgen_set(port, cb_node.index, cbgen);
 	close_tsn_socket();
 }
 
@@ -236,7 +212,6 @@ int cb_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 {
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0};
-	struct item_cfg *conf = &sitem_conf;
 
 	snprintf(xpath, XPATH_MAX_LEN, "%s", path);
 
@@ -248,10 +223,10 @@ int cb_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 		rc = parse_config(session, xpath);
 		break;
 	case SR_EV_APPLY:
-		if (conf->cb_flag == CBREC)
-			cbrec_execute();
-		else if (conf->cb_flag == CBGEN)
+		if (cb_node.gen)
 			cbgen_execute();
+		else
+			cbrec_execute();
 		break;
 	case SR_EV_ABORT:
 		break;
