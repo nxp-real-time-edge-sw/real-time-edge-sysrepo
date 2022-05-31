@@ -58,12 +58,12 @@ void clr_qci_sf(sr_session_ctx_t *session, sr_val_t *value,
 		sfi->sfconf.priority_spec = -1;
 	} else if (!strcmp(nodename, "stream-gate-ref")) {
 		sfi->sfconf.stream_gate_instance_id = 0;
-	} else if (!strcmp(nodename, "maximum-sdu-size")) {
+	} else if (!strcmp(nodename, "max-sdu-size")) {
 		sfi->sfconf.stream_filter.maximum_sdu_size = 0;
 	} else if (!strcmp(nodename,
 			   "stream-blocked-due-to-oversize-frame-enabled")) {
 		sfi->sfconf.block_oversize_enable = 0;
-	} else if (!strcmp(nodename, "ieee802-dot1q-psfp:stream-filter-ref")) {
+	} else if (!strcmp(nodename, "ieee802-dot1q-psfp:flow-meter-instance-id")) {
 		sfi->sfconf.stream_filter.flow_meter_instance_id = -1;
 	}
 }
@@ -96,36 +96,15 @@ int parse_qci_sf(sr_session_ctx_t *session, sr_val_t *value,
 		pri2num(value->data.enum_val, &sfi->sfconf.priority_spec);
 	} else if (!strcmp(nodename, "stream-gate-ref")) {
 		sfi->sfconf.stream_gate_instance_id = value->data.uint32_val;
-	} else if (!strcmp(nodename, "maximum-sdu-size")) {
-		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value(value->xpath,
-					   "filter-specification-list",
-					   "index", &xp_ctx);
-		u64_val = strtoul(index, NULL, 0);
-		if (u64_val)
-			goto out;
+	} else if (!strcmp(nodename, "max-sdu-size")) {
 		/* Only use parameters in the first list */
 		u32_val = value->data.uint32_val;
 		sfi->sfconf.stream_filter.maximum_sdu_size = u32_val;
 	} else if (!strcmp(nodename,
 			   "stream-blocked-due-to-oversize-frame-enabled")) {
-		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value(value->xpath,
-					   "filter-specification-list",
-					   "index", &xp_ctx);
-		u64_val = strtoul(index, NULL, 0);
-		if (u64_val)
-			goto out;
 		/* Only use parameters in the first list */
 		sfi->sfconf.block_oversize_enable = value->data.bool_val;
-	} else if (!strcmp(nodename, "ieee802-dot1q-psfp:flow-meter-ref")) {
-		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value(value->xpath,
-					   "filter-specification-list",
-					   "index", &xp_ctx);
-		u64_val = strtoul(index, NULL, 0);
-		if (u64_val)
-			goto out;
+	} else if (!strcmp(nodename, "ieee802-dot1q-psfp:flow-meter-instance-id")) {
 		u32_val = value->data.uint32_val;
 		sfi->sfconf.stream_filter.flow_meter_instance_id = u32_val;
 	}
@@ -357,9 +336,9 @@ int config_sf(sr_session_ctx_t *session)
 				strerror(-rc));
 			snprintf(xpath, XPATH_MAX_LEN,
 				 "%s[name='%s']%s[%s='%u']//*",
-				 "stream-filter-instance-id",
 				 BRIDGE_COMPONENT_XPATH, cur_node->sf_ptr->port,
-				 SFI_XPATH, cur_node->sf_ptr->sf_id);
+				 SFI_XPATH, "stream-filter-instance-id",
+				 cur_node->sf_ptr->sf_id);
 			cur_node->apply_st = APPLY_SET_ERR;
 			sr_set_error(session, err_msg, xpath);
 			goto cleanup;

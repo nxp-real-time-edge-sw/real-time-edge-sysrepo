@@ -29,6 +29,12 @@ module ieee802-dot1q-pb {
   description
     "This YANG module describes the bridge configuration model for
     Provider Bridges.";
+  revision 2020-11-24 {
+    description
+      "Qcw Changes";
+    reference
+      "IEEE Std 802.1Q-2018, Bridges and Bridged Networks.";
+  }
   revision 2018-03-07 {
     description
       "Published as part of IEEE Std 802.1Q-2018.
@@ -49,8 +55,9 @@ module ieee802-dot1q-pb {
         "12.13.2.1 of IEEE Std 802.1Q-2018";
     }
     list cvid-registration {
-      when
-        "../dot1q:component-name = 'dot1q:c-vlan-component' and "+
+      when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()" +
+        "/../dot1q:bridge-name]/dot1q:component[dot1q:name=current()" +
+        "/../dot1q:component-name]/dot1q:type = 'dot1q:c-vlan-component' and "+
         "../dot1q:port-type = 'dot1q:customer-edge-port'" {
         description
           "Applies when the component associated with this interface
@@ -104,8 +111,9 @@ module ieee802-dot1q-pb {
       }
     }
     list service-priority-regeneration {
-      when
-        "../dot1q:component-name = 'dot1q:c-vlan-component' and "+
+      when "/dot1q:bridges/dot1q:bridge[dot1q:name=current() " +
+        "/../dot1q:bridge-name]/dot1q:component[dot1q:name=current() " +
+        "/../dot1q:component-name]/dot1q:type = 'dot1q:c-vlan-component' and "+
         "../dot1q:port-type = 'dot1q:customer-edge-port'" {
         description
           "Applies when the component associated with this interface
@@ -134,8 +142,9 @@ module ieee802-dot1q-pb {
       }
     }
     list rcap-internal-interface {
-      when
-        "../dot1q:component-name = 'dot1q:s-vlan-component' and "+
+      when "/dot1q:bridges/dot1q:bridge[dot1q:name=current() " +
+        "/../dot1q:bridge-name]/dot1q:component[dot1q:name=current() " +
+        "/../dot1q:component-name]/dot1q:type = 'dot1q:s-vlan-component' and "+
         "../dot1q:port-type = 'dot1q:remote-customer-access-port'" {
         description
           "Applies when the component associated with this interface

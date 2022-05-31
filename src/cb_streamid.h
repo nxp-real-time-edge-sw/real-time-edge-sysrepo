@@ -24,8 +24,8 @@
 #include <tsn/genl_tsn.h>
 #include "common.h"
 
-#define CB_STREAMID_XPATH "/ieee802-dot1q-cb-stream-identification:streams"
-#define CB_STREAMID_MODULE_NAME "ieee802-dot1q-cb-stream-identification"
+#define CB_STREAMID_XPATH "/ieee802-dot1cb-stream-identification:stream-identity"
+#define CB_STREAMID_MODULE_NAME "ieee802-dot1cb-stream-identification"
 #define CB_STREAMID_TABLE_XPATH (CB_STREAMID_XPATH "/stream-identity-table")
 
 struct std_cb_stream {
@@ -44,5 +44,7 @@ struct std_cb_stream_list {
 
 int cb_streamid_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 		sr_notif_event_t event, void *private_ctx);
+
+struct std_cb_stream_list *find_stream_handle(uint32_t handle);
 
 #endif

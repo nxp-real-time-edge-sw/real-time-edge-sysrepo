@@ -390,7 +390,8 @@ int config_fm(sr_session_ctx_t *session)
 				 "%s[name='%s']%s[%s='%u']//*",
 				 "flow-meter-instance-id",
 				 BRIDGE_COMPONENT_XPATH, cur_node->fm_ptr->port,
-				 FMI_XPATH, cur_node->fm_ptr->fm_id);
+				 FMI_XPATH, "flow-meter-instance-id",
+				 cur_node->fm_ptr->fm_id);
 			sr_set_error(session, err_msg, xpath);
 			cur_node->apply_st = APPLY_SET_ERR;
 			goto cleanup;

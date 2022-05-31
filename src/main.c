@@ -183,6 +183,7 @@ int main(int argc, char **argv)
 	/* Subscribe to QBV subtree */
 	opts = SR_SUBSCR_DEFAULT | SR_SUBSCR_CTX_REUSE | SR_SUBSCR_EV_ENABLED;
 	snprintf(path, XPATH_MAX_LEN, "%s", IF_XPATH);
+	strncat(path, BR_PORT, XPATH_MAX_LEN - strlen(path));
 	strncat(path, QBV_GATE_PARA_XPATH, XPATH_MAX_LEN - strlen(path));
 	rc = sr_subtree_change_subscribe(session, path, qbv_subtree_change_cb,
 					 NULL, 0, opts, &if_subscription);
@@ -194,6 +195,7 @@ int main(int argc, char **argv)
 
 	/* Subscribe to QBV subtree */
 	snprintf(path, XPATH_MAX_LEN, "%s", IF_XPATH);
+	strncat(path, BR_PORT, XPATH_MAX_LEN - strlen(path));
 	strncat(path, QBV_MAX_SDU_XPATH, XPATH_MAX_LEN - strlen(path));
 	opts = SR_SUBSCR_DEFAULT | SR_SUBSCR_CTX_REUSE | SR_SUBSCR_EV_ENABLED;
 	rc = sr_subtree_change_subscribe(session, path, qbv_subtree_change_cb,
@@ -206,6 +208,7 @@ int main(int argc, char **argv)
 
 	/* Subscribe to QBU subtree */
 	snprintf(path, XPATH_MAX_LEN, "%s", IF_XPATH);
+	strncat(path, BR_PORT, XPATH_MAX_LEN - strlen(path));
 	strncat(path, QBU_XPATH, XPATH_MAX_LEN - strlen(path));
 	opts = SR_SUBSCR_DEFAULT | SR_SUBSCR_CTX_REUSE | SR_SUBSCR_EV_ENABLED;
 	rc = sr_subtree_change_subscribe(session, path, qbu_subtree_change_cb,
@@ -275,8 +278,7 @@ int main(int argc, char **argv)
 					 NULL, 0, opts, &bridge_subscription);
 
 	/* Subscribe to CB-StreamID subtree */
-	snprintf(path, XPATH_MAX_LEN, "%s", BRIDGE_COMPONENT_XPATH);
-	strncat(path, CB_STREAMID_XPATH, XPATH_MAX_LEN - strlen(path));
+	snprintf(path, XPATH_MAX_LEN, "%s", CB_STREAMID_XPATH);
 	opts = SR_SUBSCR_DEFAULT | SR_SUBSCR_CTX_REUSE | SR_SUBSCR_EV_ENABLED;
 	rc = sr_subtree_change_subscribe(session, path,
 					 cb_streamid_subtree_change_cb,
