@@ -312,6 +312,7 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 			stream->cbconf.ofac_iport = port;
 	} else if (!strcmp(nodename, "output-port")) {
 		strcpy(stream->port, value->data.string_val);
+		strcpy(para->ifname, value->data.string_val);
 		if (strstr(value->data.string_val, "swp"))
 			port = value->data.string_val[3] - '0';
 		else
