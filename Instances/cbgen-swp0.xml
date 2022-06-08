@@ -1,0 +1,73 @@
+<stream-identity xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1cb-stream-identification">
+	<index>1</index>
+	<handle>1</handle>
+	<in-facing>
+		<input-port>swp0</input-port>
+	</in-facing>
+	<out-facing>
+		<input-port>swp0</input-port>
+		<output-port>swp1</output-port>
+	</out-facing>
+	<null-stream-identification>
+		<destination-mac>74-d0-2b-08-22-64</destination-mac>
+		<tagged>all</tagged>
+		<vlan>5</vlan>
+	</null-stream-identification>
+</stream-identity>
+
+<stream-identity xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1cb-stream-identification">
+	<index>2</index>
+	<handle>2</handle>
+	<in-facing>
+		<input-port>swp0</input-port>
+	</in-facing>
+	<out-facing>
+		<input-port>swp0</input-port>
+		<output-port>swp2</output-port>
+	</out-facing>
+	<null-stream-identification>
+		<destination-mac>74-d0-2b-08-22-64</destination-mac>
+		<tagged>all</tagged>
+		<vlan>5</vlan>
+	</null-stream-identification>
+</stream-identity>
+
+<frer xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1cb-frer">
+	<sequence-generation>
+		<index>1</index>
+		<stream>1</stream>
+	</sequence-generation>
+	<sequence-identification>
+		<port>swp0</port>
+		<direction-out-facing>true</direction-out-facing>
+		<stream>1</stream>
+	</sequence-identification>
+	<stream-split>
+		<port>swp0</port>
+		<direction-out-facing>true</direction-out-facing>
+		<input-id>1</input-id>
+		<output-id>1</output-id>
+		<output-id>2</output-id>
+	</stream-split>	
+</frer>
+
+<interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
+	<interface>
+		<name>swp0</name>
+		<enabled>true</enabled>
+		<type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+		
+	</interface>
+	<interface>
+		<name>swp1</name>
+		<enabled>true</enabled>
+		<type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+		
+	</interface>
+	<interface>
+		<name>swp2</name>
+		<enabled>true</enabled>
+		<type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+		
+	</interface>
+</interfaces>

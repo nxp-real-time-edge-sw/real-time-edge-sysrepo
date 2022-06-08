@@ -14,7 +14,8 @@
 			<psfp:flow-meter-instance-table>
 			    <psfp:flow-meter-instance-id>1</psfp:flow-meter-instance-id>
 			    <qci-augment:flow-meter-enabled>true</qci-augment:flow-meter-enabled>
-			</psfp:flow-meter-instance-table>
+		    </psfp:flow-meter-instance-table>
+		    <psfp:max-flow-meter-instances>64</psfp:max-flow-meter-instances>
 		    </psfp:flow-meters>
 		</component>
 	</bridge>

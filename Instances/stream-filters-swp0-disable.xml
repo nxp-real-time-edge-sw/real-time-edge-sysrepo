@@ -1,5 +1,4 @@
 <bridges xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge"
-	 xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
          xmlns:sfsg="urn:ieee:std:802.1Q:yang:ieee802-dot1q-stream-filters-gates"
          xmlns:psfp="urn:ieee:std:802.1Q:yang:ieee802-dot1q-psfp"
 	 xmlns:qci-augment="urn:ieee:std:802.1Q:yang:ieee802-dot1q-qci-augment">
@@ -14,15 +13,14 @@
 			<sfsg:stream-filter-instance-table>
 			    <sfsg:stream-filter-instance-id>1</sfsg:stream-filter-instance-id>
 			    <sfsg:stream-handle>1</sfsg:stream-handle>
-			    <qci-augment:stream-filter-enabled>true</qci-augment:stream-filter-enabled>
-			    <sfsg:filter-specification-list nc:operation="delete">
-				<sfsg:index>0</sfsg:index>
-			    </sfsg:filter-specification-list>
-			    <sfsg:filter-specification-list nc:operation="delete">
-				<sfsg:index>1</sfsg:index>
-			    </sfsg:filter-specification-list>
-			</sfsg:stream-filter-instance-table>
-		    </sfsg:stream-filters>
-		</component>
-	</bridge>
+			    <qci-augment:stream-filter-enabled>false</qci-augment:stream-filter-enabled>
+			    <sfsg:priority-spec>four</sfsg:priority-spec>
+			    <sfsg:stream-gate-ref>1</sfsg:stream-gate-ref>
+			    <psfp:flow-meter-instance-id>68</psfp:flow-meter-instance-id>
+			    <sfsg:max-sdu-size>800</sfsg:max-sdu-size>
+			    <sfsg:stream-blocked-due-to-oversize-frame-enabled>false</sfsg:stream-blocked-due-to-oversize-frame-enabled>
+		    </sfsg:stream-filter-instance-table>
+	    </sfsg:stream-filters>
+	</component>
+    </bridge>
 </bridges>
