@@ -454,7 +454,7 @@ module ieee802-dot1q-bridge {
           }
         }
         container filtering-database {
-          when "../../bridge-type != 'two-port-mac-relay-bridge'" {
+          when "../../bridge-type != 'dot1q:two-port-mac-relay-bridge'" {
             description
               "Applies to non TPMRs.";
           }
@@ -781,7 +781,7 @@ module ieee802-dot1q-bridge {
           }
         }
         container bridge-vlan {
-          when "../../bridge-type != 'two-port-mac-relay-bridge'" {
+          when "../../bridge-type != 'dot1q:two-port-mac-relay-bridge'" {
             description
               "Applies to non TPMRs.";
           }
@@ -1107,7 +1107,7 @@ module ieee802-dot1q-bridge {
           }
         }
         container bridge-mst {
-          when "../../bridge-type != 'two-port-mac-relay-bridge'" {
+          when "../../bridge-type != 'dot1q:two-port-mac-relay-bridge'" {
             description
               "Applies to non TPMRs.";
           }
@@ -1209,7 +1209,7 @@ module ieee802-dot1q-bridge {
       leaf pvid {
         when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
           "/../dot1q:bridge-name]/dot1q:component[name=current()"+
-          "/../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+          "/../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
           description
             "Applies to non TPMRs";
         }
@@ -1352,7 +1352,7 @@ module ieee802-dot1q-bridge {
       leaf acceptable-frame {
         when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
           "/../dot1q:bridge-name]/dot1q:component[name=current()"+
-          "/../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+          "/../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
           description
             "Applies to non TPMRs";
         }
@@ -1381,7 +1381,7 @@ module ieee802-dot1q-bridge {
       leaf enable-ingress-filtering {
         when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
           "/../dot1q:bridge-name]/dot1q:component[name=current()"+
-          "/../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+          "/../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
           description
             "Applies to non TPMRs";
         }
@@ -1397,7 +1397,7 @@ module ieee802-dot1q-bridge {
       leaf enable-restricted-vlan-registration {
         when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
           "/../dot1q:bridge-name]/dot1q:component[name=current()"+
-          "/../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+          "/../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
           description
             "Applies to non TPMRs";
         }
@@ -1413,7 +1413,7 @@ module ieee802-dot1q-bridge {
       leaf enable-vid-translation-table {
         when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
           "/../dot1q:bridge-name]/dot1q:component[name=current()"+
-          "/../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+          "/../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
           description
             "Applies to non TPMRs";
         }
@@ -1430,7 +1430,7 @@ module ieee802-dot1q-bridge {
       leaf enable-egress-vid-translation-table {
         when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
           "/../dot1q:bridge-name]/dot1q:component[name=current()"+
-          "/../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+          "/../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
           description
             "Applies to non TPMRs";
         }
@@ -1447,7 +1447,7 @@ module ieee802-dot1q-bridge {
       list protocol-group-vid-set {
         when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
           "/../dot1q:bridge-name]/dot1q:component[name=current()"+
-          "/../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+          "/../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
           description
             "Applies to non TPMRs";
         }
@@ -1519,7 +1519,7 @@ module ieee802-dot1q-bridge {
       leaf protocol-based-vlan-classification {
         when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
           "/../dot1q:bridge-name]/dot1q:component[name=current()"+
-          "/../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+          "/../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
           description
             "Applies to non TPMRs";
         }
@@ -1535,7 +1535,7 @@ module ieee802-dot1q-bridge {
       leaf max-vid-set-entries {
         when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
           "/../dot1q:bridge-name]/dot1q:component[name=current()"+
-          "/../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+          "/../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
           description
             "Applies to non TPMRs";
         }
@@ -1733,7 +1733,7 @@ module ieee802-dot1q-bridge {
         leaf discard-on-ingress-filtering {
           when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
             "/../../dot1q:bridge-name]/dot1q:component[name=current()"+
-            "/../../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+            "/../../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
             description
               "Applies to non TPMRs";
           }
@@ -1753,7 +1753,7 @@ module ieee802-dot1q-bridge {
       list vid-translations {
         when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
           "/../dot1q:bridge-name]/dot1q:component[name=current()"+
-          "/../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+          "/../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
           description
             "Applies to non TPMRs";
         }
@@ -1796,7 +1796,7 @@ module ieee802-dot1q-bridge {
       list egress-vid-translations {
         when "/dot1q:bridges/dot1q:bridge[dot1q:name=current()"+
           "/../dot1q:bridge-name]/dot1q:component[name=current()"+
-          "/../dot1q:component-name]/dot1q:type != 'd-bridge-component'" {  
+          "/../dot1q:component-name]/dot1q:type != 'dot1q:d-bridge-component'" {  
           description
             "Applies to non TPMRs";
         }
