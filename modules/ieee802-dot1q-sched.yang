@@ -77,9 +77,9 @@ module ieee802-dot1q-sched {
       the second parameter is a timeIntervalValue";
     uses dot1q-types:base-gate-control-entries {
       refine "gate-control-entry/operation-name" {
-        must "(. = 'set-gate-states') or
-        (. = 'set-and-hold-mac') or
-        (. = 'set-and-release-mac')";
+        must "(. = 'sched:set-gate-states') or
+        (. = 'sched:set-and-hold-mac') or
+        (. = 'sched:set-and-release-mac')";
       }
       refine "gate-control-entry/time-interval-value" {
         must "(. <= ../../../supported-interval-max )";
@@ -210,9 +210,6 @@ module ieee802-dot1q-sched {
           8.6.9.4.22 of IEEE Std 802.1Q-2018";
       }
       container admin-control-list {
-        must "(count(./gate-control-entry) > 0)" {
-          error-message "admin-control-list empty.";
-        }
         must "(count(./gate-control-entry) <= ../supported-list-max)" {
           error-message "Number of elements in admin-control-list must 
           not be greater than supported-list-max";
@@ -262,9 +259,6 @@ module ieee802-dot1q-sched {
         uses ieee802:rational-grouping;
       }
       container oper-cycle-time {
-        must "(. <= ../supported-cycle-max)" {
-          error-message "oper-cycle-time must not be greater than supported-cycle-max";
-        }
         config false;
         description
           "OperCycleTime specifies the operational value of the gating

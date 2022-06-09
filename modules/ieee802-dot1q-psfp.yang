@@ -84,7 +84,7 @@ module ieee802-dot1q-psfp {
       IntervalOctetMaxValue is optional.";
     uses dot1q-types:base-gate-control-entries {
       refine "gate-control-entry/operation-name" {
-        must ". = 'set-gate-and-ipv'";
+        must ". = 'psfp:set-gate-and-ipv'";
       }
       refine "gate-control-entry/time-interval-value" {
         must "(. <= ../../../../supported-interval-max )";
@@ -324,9 +324,6 @@ module ieee802-dot1q-psfp {
       uses ieee802:rational-grouping;
     }
     container oper-cycle-time {
-      must "(. <= ../../supported-cycle-max)" {
-        error-message "oper-cycle-time must not be greater than supported-cycle-max";
-      }
       config false;
       description
         "The operational value of the gating cycle for the Port. This

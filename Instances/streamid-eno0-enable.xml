@@ -1,41 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bridges xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge"
-         xmlns:stream="urn:ieee:std:802.1Q:yang:ieee802-dot1q-stream-id">
-	<bridge>
-	    <name>enetc</name>
-	    <address>00-00-00-00-00-01</address>
-	    <bridge-type>provider-bridge</bridge-type>
-                <component>
-                    <name>eno0</name>
-		    <type>edge-relay-component</type>
-                    <stream:streams>
-                        <stream:stream-identity-table>
-                            <stream:index>1</stream:index>
-                            <stream:stream-id-enabled>true</stream:stream-id-enabled>
-                            <stream:stream-handle>1</stream:stream-handle>
-                            <stream:identification-type>null</stream:identification-type>
-                            <stream:parameters>
-                                <stream:null-stream-identification-params>
-                                        <stream:dest-address>74-d0-2b-08-22-64</stream:dest-address>
-                                        <stream:vlan-tagged>priority</stream:vlan-tagged>
-                                        <stream:vlan-id>5</stream:vlan-id>
-                                </stream:null-stream-identification-params>
-                            </stream:parameters>
-                        </stream:stream-identity-table>
-                        <stream:stream-identity-table>
-                            <stream:index>3</stream:index>
-                            <stream:stream-id-enabled>true</stream:stream-id-enabled>
-                            <stream:stream-handle>100</stream:stream-handle>
-                            <stream:identification-type>source-mac-and-vlan</stream:identification-type>
-                            <stream:parameters>
-                                <stream:source-mac-and-vlan-identification-params>
-                                        <stream:source-address>11-22-33-44-55-66</stream:source-address>
-                                        <stream:vlan-tagged>all</stream:vlan-tagged>
-                                        <stream:vlan-id>20</stream:vlan-id>
-                                </stream:source-mac-and-vlan-identification-params>
-                            </stream:parameters>
-                        </stream:stream-identity-table>
-                    </stream:streams>
-                </component>
-	</bridge>
-</bridges>
+<stream-identity xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1cb-stream-identification">
+	<index>1</index>
+	<handle>1</handle>
+	<in-facing>
+		<input-port>eno0</input-port>
+	</in-facing>
+	<out-facing>
+		<input-port>eno0</input-port>
+		<output-port>eno0</output-port>
+	</out-facing>
+	<null-stream-identification>
+		<destination-mac>74-d0-2b-08-22-64</destination-mac>
+		<tagged>all</tagged>
+		<vlan>5</vlan>
+	</null-stream-identification>
+</stream-identity>
+
+<interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
+	<interface>
+		<name>eno0</name>
+		<enabled>true</enabled>
+		<type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+		
+	</interface>
+</interfaces>

@@ -20,7 +20,8 @@
 			    <psfp:coupling-flag>one</psfp:coupling-flag>
 			    <psfp:color-mode>color-aware</psfp:color-mode>
 			    <psfp:drop-on-yellow>false</psfp:drop-on-yellow>
-			</psfp:flow-meter-instance-table>
+		    </psfp:flow-meter-instance-table>
+		    <psfp:max-flow-meter-instances>64</psfp:max-flow-meter-instances>
 		    </psfp:flow-meters>
 		</component>
 	</bridge>

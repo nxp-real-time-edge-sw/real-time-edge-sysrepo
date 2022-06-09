@@ -86,12 +86,8 @@ module iana-if-type {
 
   revision 2018-06-28 {
     description
-      "Registered ifType 294.";
-  }
-
-  revision 2018-06-28 {
-    description
-      "Registered ifType 293.";
+      "Registered ifType 294.
+       Registered ifType 293.";
   }
 
   revision 2018-06-22 {

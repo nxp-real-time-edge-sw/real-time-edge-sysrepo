@@ -21,6 +21,7 @@
 			    <psfp:color-mode>color-blind</psfp:color-mode>
 			    <psfp:drop-on-yellow>false</psfp:drop-on-yellow>
 			</psfp:flow-meter-instance-table>
+		   	 <psfp:max-flow-meter-instances>384</psfp:max-flow-meter-instances>
 		    </psfp:flow-meters>
 		</component>
 	</bridge>

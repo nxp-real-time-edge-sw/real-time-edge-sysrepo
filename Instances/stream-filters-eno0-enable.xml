@@ -12,16 +12,46 @@
 		    <sfsg:stream-filters>
 			<sfsg:stream-filter-instance-table>
 			    <sfsg:stream-filter-instance-id>1</sfsg:stream-filter-instance-id>
-			    <sfsg:stream-handle>100</sfsg:stream-handle>
+			    <sfsg:stream-handle>1</sfsg:stream-handle>
 			    <qci-augment:stream-filter-enabled>true</qci-augment:stream-filter-enabled>
-			    <sfsg:priority-spec>wildcard</sfsg:priority-spec>
+			    <sfsg:priority-spec>four</sfsg:priority-spec>
 			    <sfsg:stream-gate-ref>1</sfsg:stream-gate-ref>
-			    <sfsg:filter-specification-list>
-				<sfsg:index>0</sfsg:index>
-				<psfp:flow-meter-ref>1</psfp:flow-meter-ref>
-			    </sfsg:filter-specification-list>
-			</sfsg:stream-filter-instance-table>
-		    </sfsg:stream-filters>
+			    <psfp:flow-meter-instance-id>1</psfp:flow-meter-instance-id>
+			    <sfsg:max-sdu-size>800</sfsg:max-sdu-size>
+			    <sfsg:stream-blocked-due-to-oversize-frame-enabled>false</sfsg:stream-blocked-due-to-oversize-frame-enabled>
+		    </sfsg:stream-filter-instance-table>
+	    </sfsg:stream-filters>
+            <sfsg:stream-gates>
+                <sfsg:stream-gate-instance-table>
+                    <sfsg:stream-gate-instance-id>1</sfsg:stream-gate-instance-id>
+                    <sfsg:gate-enable>true</sfsg:gate-enable>
+                    <sfsg:admin-gate-states>open</sfsg:admin-gate-states>
+                    <sfsg:admin-ipv>null</sfsg:admin-ipv>
+		    <psfp:admin-base-time>
+			    <psfp:seconds>0</psfp:seconds>
+			    <psfp:nanoseconds>0</psfp:nanoseconds>
+		    </psfp:admin-base-time>
+		    <psfp:admin-cycle-time>
+			    <psfp:numerator>8000</psfp:numerator>
+			    <psfp:denominator>1000000000</psfp:denominator>
+		    </psfp:admin-cycle-time>
+		    <psfp:admin-control-list>
+			<psfp:gate-control-entry>
+                            <psfp:index>0</psfp:index>
+                            <psfp:operation-name>psfp:set-gate-and-ipv</psfp:operation-name>
+                            <psfp:gate-state-value>open</psfp:gate-state-value>
+                            <psfp:ipv-spec>two</psfp:ipv-spec>
+                            <psfp:time-interval-value>8000</psfp:time-interval-value>
+                        </psfp:gate-control-entry>
+                    </psfp:admin-control-list>
+                </sfsg:stream-gate-instance-table>
+		<psfp:supported-list-max>32</psfp:supported-list-max>
+				<psfp:supported-cycle-max>
+					<psfp:numerator>1</psfp:numerator>
+					<psfp:denominator>1</psfp:denominator>
+				</psfp:supported-cycle-max>
+				<psfp:supported-interval-max>1000000000</psfp:supported-interval-max>
+	</sfsg:stream-gates>
 		</component>
 	</bridge>
 </bridges>

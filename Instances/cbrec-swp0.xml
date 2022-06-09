@@ -1,11 +1,40 @@
-<frame-replication-and-elimination xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1cb-frer"
-			       xmlns:ii="urn:ietf:params:xml:ns:yang:ietf-interfaces:interfaces:interface">
-	<sequence-recovery-list>
-		<index>1</index>
+<frer xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1cb-frer">
+	<sequence-recovery>
+		<index>3</index>
+		<stream>1</stream>
 		<history-length>31</history-length>
+		<port>swp0</port>
+	</sequence-recovery>
+</frer>		
+
+<stream-identity xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1cb-stream-identification">
+	<index>1</index>
+	<handle>1</handle>
+	<in-facing>
+		<input-port>swp0</input-port>
+	</in-facing>
+	<out-facing>
+		<input-port>swp0</input-port>
+		<output-port>swp1</output-port>
+	</out-facing>
+	<null-stream-identification>
+		<destination-mac>74-d0-2b-08-22-64</destination-mac>
+		<tagged>all</tagged>
+		<vlan>5</vlan>
+	</null-stream-identification>
+</stream-identity>
+
+<interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
+	<interface>
+		<name>swp0</name>
+		<enabled>true</enabled>
+		<type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
 		
-		<port-list>swp0</port-list>
-	</sequence-recovery-list>
-</frame-replication-and-elimination>		
-				
+	</interface>
+	<interface>
+		<name>swp1</name>
+		<enabled>true</enabled>
+		<type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
 		
+	</interface>
+</interfaces>
