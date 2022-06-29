@@ -210,10 +210,6 @@ module ieee802-dot1q-sched {
           8.6.9.4.22 of IEEE Std 802.1Q-2018";
       }
       container admin-control-list {
-        must "(count(./gate-control-entry) <= ../supported-list-max)" {
-          error-message "Number of elements in admin-control-list must 
-          not be greater than supported-list-max";
-        }
 	config true;
         description
           "AdminControlList is the administrative value of the gate
