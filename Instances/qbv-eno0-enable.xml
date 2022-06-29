@@ -19,7 +19,7 @@
 		    		<sched:supported-list-max>10</sched:supported-list-max>
 				<sched:supported-interval-max>1000000000</sched:supported-interval-max>
 				<sched:admin-base-time>
-					<sched:seconds>2000000000</sched:seconds>
+					<sched:seconds>0</sched:seconds>
 					<sched:nanoseconds>5000</sched:nanoseconds>
 				</sched:admin-base-time>
 				<sched:admin-cycle-time>

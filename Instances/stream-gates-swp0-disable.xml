@@ -19,7 +19,7 @@
 					<sfsg:admin-ipv>null</sfsg:admin-ipv>
 					<psfp:admin-cycle-time-extension>1000</psfp:admin-cycle-time-extension>
 					<psfp:admin-base-time>
-						<psfp:seconds>100</psfp:seconds>
+						<psfp:seconds>0</psfp:seconds>
 						<psfp:nanoseconds>5000</psfp:nanoseconds>
 					</psfp:admin-base-time>
 					<psfp:admin-cycle-time>
