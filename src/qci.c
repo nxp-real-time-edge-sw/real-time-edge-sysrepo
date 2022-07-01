@@ -282,11 +282,8 @@ int qci_check_parameter(void)
 		if (!st_ret)
 			goto ret_tag;
 
-		if (!fm_ret && !sg_ret) {
-			qci_ret_err_msg("need qci flow meter or gate parameter!");
-			rc = SR_ERR_INVAL_ARG;
+		if (!fm_ret && !sg_ret)
 			goto ret_tag;
-		}
 
 		memset(cmd_buf, 0, buf_len);
 
