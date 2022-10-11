@@ -256,7 +256,9 @@ void clr_qbv(sr_val_t *value, struct sr_qbv_conf *qbvconf)
 		index = sr_xpath_key_value(value->xpath,
 					   "gate-control-entry",
 					   "index", &xp_ctx);
-		u64_val = strtoul(index, NULL, 0);
+		if (index != NULL) {
+			u64_val = strtoul(index, NULL, 0);
+		}
 		entry = qbvconf->qbvconf_ptr->admin.control_list;
 		(entry + u64_val)->gate_state = 0;
 	} else if (!strcmp(nodename, "time-interval-value")) {
@@ -264,7 +266,9 @@ void clr_qbv(sr_val_t *value, struct sr_qbv_conf *qbvconf)
 		index = sr_xpath_key_value(value->xpath,
 					   "gate-control-entry",
 					   "index", &xp_ctx);
-		u64_val = strtoul(index, NULL, 0);
+		if (index != NULL) {
+			u64_val = strtoul(index, NULL, 0);
+		}
 		entry = qbvconf->qbvconf_ptr->admin.control_list;
 		(entry + u64_val)->time_interval = 0;
 	} else if (!strcmp(nodename, "numerator")) {
@@ -321,7 +325,9 @@ int parse_qbv(sr_session_ctx_t *session, sr_val_t *value,
 		index = sr_xpath_key_value(value->xpath,
 					   "gate-control-entry",
 					   "index", &xp_ctx);
-		u64_val = strtoul(index, NULL, 0);
+		if (index != NULL) {
+			u64_val = strtoul(index, NULL, 0);
+		}
 		if (u64_val >= qbvconf->qbvconf_ptr->admin.control_list_length)
 			qbvconf->qbvconf_ptr->admin.control_list_length = u64_val + 1;
 
@@ -334,7 +340,9 @@ int parse_qbv(sr_session_ctx_t *session, sr_val_t *value,
 		index = sr_xpath_key_value(value->xpath,
 					   "gate-control-entry",
 					   "index", &xp_ctx);
-		u64_val = strtoul(index, NULL, 0);
+		if (index != NULL) {
+			u64_val = strtoul(index, NULL, 0);
+		}
 
 		if (u64_val >= qbvconf->qbvconf_ptr->admin.control_list_length)
 			qbvconf->qbvconf_ptr->admin.control_list_length = u64_val + 1;

@@ -175,7 +175,9 @@ int parse_mac_address(char *mac_str, uint64_t *mac,
 	}
 	temp = strtok(mac_str, "-");
 
-	ul = strtoul(temp, NULL, 16);
+	if (temp != NULL) {
+		ul = strtoul(temp, NULL, 16);
+	}
 	i = 0;
 	byte[i++] = ul;
 	while (1) {
