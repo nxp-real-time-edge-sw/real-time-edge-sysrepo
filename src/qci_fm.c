@@ -390,7 +390,6 @@ int config_fm(sr_session_ctx_t *session)
 				strerror(-rc));
 			snprintf(xpath, XPATH_MAX_LEN,
 				 "%s[name='%s']%s[%s='%u']//*",
-				 "flow-meter-instance-id",
 				 BRIDGE_COMPONENT_XPATH, cur_node->fm_ptr->port,
 				 FMI_XPATH, "flow-meter-instance-id",
 				 cur_node->fm_ptr->fm_id);
