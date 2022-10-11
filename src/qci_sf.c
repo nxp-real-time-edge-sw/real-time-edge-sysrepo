@@ -280,7 +280,6 @@ int parse_sf_per_port_per_id(sr_session_ctx_t *session, bool abort)
 				del_list_node(cur_node->pre, QCI_T_SF);
 			}
 			cur_node = cur_node->next;
-			continue;
 		} else if (rc != SR_ERR_OK) {
 				snprintf(err_msg, MSG_MAX_LEN,
 					 "Get items from %s failed", xpath);
