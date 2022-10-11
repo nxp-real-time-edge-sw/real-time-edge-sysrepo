@@ -154,6 +154,7 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 	struct tsn_qci_psfp_gcl *entry = sgi->sgconf.admin.gcl;
 	struct tc_qci_gates_para *para = &sqci_gates_para;
 	struct tc_qci_gate_entry *gate = NULL;
+	struct tc_qci_gate_entry gate_tmp;
 	struct tc_qci_gate_acl *acl = NULL;
 
 	sr_xpath_recover(&xp_ctx);
@@ -164,6 +165,8 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 	gate = qci_gate_find_entry(sgi->sg_id);
 	if (stc_cfg_flag && !gate)
 		goto out;
+	else if (!gate)
+		gate = &gate_tmp;
 
 	acl = gate->acl;
 

@@ -87,6 +87,7 @@ int parse_qci_fm(sr_session_ctx_t *session, sr_val_t *value,
 {
 	struct tc_qci_policer_para *para = &sqci_policer_para;
 	struct tc_qci_policer_entry *entry = NULL;
+	struct tc_qci_policer_entry entry_tmp;
 	int rc = SR_ERR_OK;
 	sr_xpath_ctx_t xp_ctx = {0};
 	char *nodename;
@@ -101,6 +102,8 @@ int parse_qci_fm(sr_session_ctx_t *session, sr_val_t *value,
 	entry = qci_fm_find_entry(fmi->fm_id);
 	if (stc_cfg_flag && !entry)
 		goto out;
+	else if (!entry)
+		entry = &entry_tmp;
 
 	if (!strcmp(nodename, "ieee802-dot1q-qci-augment:flow-meter-enabled")) {
 		fmi->enable = value->data.bool_val;
