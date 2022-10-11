@@ -52,6 +52,8 @@ void clr_qbu(sr_val_t *val, uint32_t *tc, uint8_t *pt,
 
 	sr_xpath_recover(&xp_ctx);
 	nodename = sr_xpath_node_name(val->xpath);
+	if (!nodename)
+		return;
 	if (strcmp(nodename, "priority") == 0)
 		*tc = val->data.uint8_val;
 	else if (strcmp(nodename, "frame-preemption-status") == 0)
@@ -79,6 +81,8 @@ int parse_qbu(sr_val_t *val, uint32_t *tc, uint8_t *pt,
 	rc = 0;
 	sr_xpath_recover(&xp_ctx);
 	nodename = sr_xpath_node_name(val->xpath);
+	if (!nodename)
+		return 1;
 	if (strcmp(nodename, "priority") == 0) {
 		*tc = val->data.uint8_val;
 	} else if (strcmp(nodename, "frame-preemption-status") == 0) {

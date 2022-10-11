@@ -152,6 +152,10 @@ static void *file_monitor(void *arg)
 	}
 
 	wds = malloc(sizeof(struct file_mon) * file_clbks.callbacks_count);
+	if (!wds) {
+		printf("Failed to malloc memory for wds\n");
+		return NULL;
+	}
 	pthread_cleanup_push(free, wds);
 
 	for (i = 0; i < file_clbks.callbacks_count; i++) {

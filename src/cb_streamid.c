@@ -175,7 +175,9 @@ int parse_mac_address(char *mac_str, uint64_t *mac,
 	}
 	temp = strtok(mac_str, "-");
 
-	ul = strtoul(temp, NULL, 16);
+	if (temp != NULL) {
+		ul = strtoul(temp, NULL, 16);
+	}
 	i = 0;
 	byte[i++] = ul;
 	while (1) {
@@ -614,7 +616,6 @@ int parse_streamid_per_port_per_id(sr_session_ctx_t *session, bool abort)
 				del_stream_list_node(cur_node);
 			}
 			cur_node = cur_node->next;
-			continue;
 		} else if (rc != SR_ERR_OK) {
 			snprintf(err_msg, MSG_MAX_LEN,
 				 "Get items from %s failed", xpath);
