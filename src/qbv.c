@@ -235,6 +235,7 @@ void clr_qbv(sr_val_t *value, struct sr_qbv_conf *qbvconf)
 {
 	sr_xpath_ctx_t xp_ctx = {0};
 	char *index;
+	char *key_value = NULL;
 	char *nodename;
 	struct tsn_qbv_entry *entry;
 	uint64_t u64_val = 0;
@@ -288,11 +289,11 @@ void clr_qbv(sr_val_t *value, struct sr_qbv_conf *qbvconf)
 		qbvconf->qbvconf_ptr->config_change = 0;
 	} else if (!strcmp(nodename, "queue-max-sdu")) {
 		sr_xpath_recover(&xp_ctx);
-		if (strcmp("0",
-			   sr_xpath_key_value(value->xpath,
-					      "queue-max-sdu-table",
-					      "traffic-class",
-					      &xp_ctx)))
+		key_value = sr_xpath_key_value(value->xpath,
+					       "queue-max-sdu-table",
+					       "traffic-class",
+					       &xp_ctx);
+		if (key_value != NULL && strcmp("0", key_value))
 			qbvconf->qbvconf_ptr->maxsdu = 0;
 	}
 }
@@ -303,6 +304,7 @@ int parse_qbv(sr_session_ctx_t *session, sr_val_t *value,
 	int valid = 0;
 	sr_xpath_ctx_t xp_ctx = {0};
 	char *index = NULL;
+	char *key_value = NULL;
 	uint8_t u8_val = 0;
 	uint32_t u32_val = 0;
 	uint64_t u64_val = 0;
@@ -379,11 +381,11 @@ int parse_qbv(sr_session_ctx_t *session, sr_val_t *value,
 		qbvconf->qbvconf_ptr->config_change = value->data.bool_val;
 	} else if (!strcmp(nodename, "queue-max-sdu")) {
 		sr_xpath_recover(&xp_ctx);
-		if (strcmp("0",
-			   sr_xpath_key_value(value->xpath,
-					      "queue-max-sdu-table",
-					      "traffic-class",
-					      &xp_ctx)))
+		key_value = sr_xpath_key_value(value->xpath,
+                                              "queue-max-sdu-table",
+                                              "traffic-class",
+                                              &xp_ctx);
+		if (key_value != NULL && strcmp("0", key_value))
 			qbvconf->qbvconf_ptr->maxsdu = value->data.uint32_val;
 	}
 
