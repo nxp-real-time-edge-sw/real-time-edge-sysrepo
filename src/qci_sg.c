@@ -50,7 +50,7 @@ void clr_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 	sr_xpath_ctx_t xp_ctx = {0};
 	char *nodename;
 	char *index;
-	uint64_t u64_val;
+	uint64_t u64_val = 0;
 	struct tsn_qci_psfp_gcl *entry = sgi->sgconf.admin.gcl;
 
 	sr_xpath_recover(&xp_ctx);
