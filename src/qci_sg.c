@@ -208,9 +208,6 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
 		}
-		if (u64_val >= sgi->sgconf.admin.control_list_length)
-			sgi->sgconf.admin.control_list_length = u64_val + 1;
-		gate->acl_len = MIN(sgi->sgconf.admin.control_list_length, SUB_PARA_LEN);
 
 		num_str = value->data.enum_val;
 		if (!strcmp(num_str, "open")) {
@@ -234,9 +231,6 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
 		}
-		if (u64_val >= sgi->sgconf.admin.control_list_length)
-			sgi->sgconf.admin.control_list_length = u64_val + 1;
-		gate->acl_len = MIN(sgi->sgconf.admin.control_list_length, SUB_PARA_LEN);
 
 		pri2num(value->data.enum_val, &(entry + u64_val)->ipv);
 		if (u64_val < SUB_PARA_LEN)
@@ -249,11 +243,14 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
 		}
-		if (u64_val >= sgi->sgconf.admin.control_list_length)
+
+		(entry + u64_val)->time_interval = value->data.uint32_val;
+		if ((entry + u64_val)->time_interval == 0)
+			sgi->sgconf.admin.control_list_length = u64_val;
+		else
 			sgi->sgconf.admin.control_list_length = u64_val + 1;
 		gate->acl_len = MIN(sgi->sgconf.admin.control_list_length, SUB_PARA_LEN);
 
-		(entry + u64_val)->time_interval = value->data.uint32_val;
 		if (u64_val < SUB_PARA_LEN)
 			acl[u64_val].interval = value->data.uint32_val;
 	} else if (!strcmp(nodename, "interval-octet-max")) {
@@ -264,9 +261,6 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
 		}
-		if (u64_val >= sgi->sgconf.admin.control_list_length)
-			sgi->sgconf.admin.control_list_length = u64_val + 1;
-		gate->acl_len = MIN(sgi->sgconf.admin.control_list_length, SUB_PARA_LEN);
 
 		(entry + u64_val)->octet_max = value->data.uint32_val;
 	} else if (!strcmp(nodename, "numerator")) {

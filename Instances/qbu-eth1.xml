@@ -10,7 +10,7 @@
 			<preempt:frame-preemption-parameters>
 				<preempt:frame-preemption-status-table>
 					<preempt:priority>0</preempt:priority>
-					<preempt:frame-preemption-status>express</preempt:frame-preemption-status>
+					<preempt:frame-preemption-status>preemptible</preempt:frame-preemption-status>
 				</preempt:frame-preemption-status-table>
 				<preempt:frame-preemption-status-table>
 					<preempt:priority>1</preempt:priority>

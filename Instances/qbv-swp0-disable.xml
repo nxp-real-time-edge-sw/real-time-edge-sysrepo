@@ -28,13 +28,19 @@
 				</sched:admin-cycle-time>
 				<sched:admin-control-list>
 			    		<sched:gate-control-entry>
-				    		<sched:index>0</sched:index>
+						<sched:index>0</sched:index>
+						<sched:gate-states-value>0</sched:gate-states-value>
+						<sched:time-interval-value>0</sched:time-interval-value>
 			    		</sched:gate-control-entry>
 			    		<sched:gate-control-entry>
-				    		<sched:index>1</sched:index>
+						<sched:index>1</sched:index>
+						<sched:gate-states-value>0</sched:gate-states-value>
+						<sched:time-interval-value>0</sched:time-interval-value>
 			    		</sched:gate-control-entry>
 			    		<sched:gate-control-entry>
-				    		<sched:index>2</sched:index>
+						<sched:index>2</sched:index>
+						<sched:gate-states-value>0</sched:gate-states-value>
+						<sched:time-interval-value>0</sched:time-interval-value>
 			    		</sched:gate-control-entry>
 		    		</sched:admin-control-list>
 			</sched:gate-parameter-table>
