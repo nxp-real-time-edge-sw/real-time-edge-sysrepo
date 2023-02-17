@@ -3,7 +3,7 @@
  * @author Xiaolin He
  * @brief Application to configure TSN-QBV function based on sysrepo datastore.
  *
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2020, 2022-2023 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -319,6 +319,8 @@ int parse_qbv(sr_session_ctx_t *session, sr_val_t *value,
 
 	if (!strcmp(nodename, "gate-enabled")) {
 		qbvconf->qbv_en = value->data.bool_val;
+		if (!qbvconf->qbv_en)
+			valid = 1;
 	} else if (!strcmp(nodename, "admin-gate-states")) {
 		u8_val = value->data.uint8_val;
 		qbvconf->qbvconf_ptr->admin.gate_states = u8_val;

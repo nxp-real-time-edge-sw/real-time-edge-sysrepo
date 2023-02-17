@@ -14,8 +14,8 @@
 			    		<sched:queue-max-sdu>1024</sched:queue-max-sdu>
 		    		</sched:queue-max-sdu-table>
 		    		<sched:gate-enabled>false</sched:gate-enabled>
-		    		<sched:admin-gate-states nc:operation="delete">127</sched:admin-gate-states>
-		    		<sched:config-change nc:operation="delete">true</sched:config-change>
+				<sched:admin-gate-states>127</sched:admin-gate-states>
+				<sched:config-change>true</sched:config-change>
 		    		<sched:supported-list-max>10</sched:supported-list-max>
 				<sched:supported-interval-max>1000000000</sched:supported-interval-max>
 				<sched:admin-base-time>
@@ -27,17 +27,17 @@
 					<sched:denominator>10000</sched:denominator>
 				</sched:admin-cycle-time>
 				<sched:admin-control-list>
-			    		<sched:gate-control-entry>
+					<sched:gate-control-entry nc:operation="delete">
 						<sched:index>0</sched:index>
 						<sched:gate-states-value>0</sched:gate-states-value>
 						<sched:time-interval-value>0</sched:time-interval-value>
 			    		</sched:gate-control-entry>
-			    		<sched:gate-control-entry>
+					<sched:gate-control-entry nc:operation="delete">
 						<sched:index>1</sched:index>
 						<sched:gate-states-value>0</sched:gate-states-value>
 						<sched:time-interval-value>0</sched:time-interval-value>
 			    		</sched:gate-control-entry>
-			    		<sched:gate-control-entry>
+					<sched:gate-control-entry nc:operation="delete">
 						<sched:index>2</sched:index>
 						<sched:gate-states-value>0</sched:gate-states-value>
 						<sched:time-interval-value>0</sched:time-interval-value>
