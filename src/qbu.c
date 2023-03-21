@@ -91,7 +91,7 @@ int parse_qbu(sr_val_t *val, uint32_t *tc, uint8_t *pt,
 		else if (strcmp(val->data.string_val, "preemptible") == 0)
 			*pt |=  (1 << *tc);
 		else if (strcmp(val->data.string_val, "express") == 0)
-			*pt &=  (1 << *tc);
+			*pt &= ~(1 << *tc);
 	} else {
 		rc = 1;
 	}
