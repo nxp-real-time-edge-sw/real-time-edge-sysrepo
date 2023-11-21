@@ -224,6 +224,8 @@ config_qbu:
 			return rc;
 	} else {
 		init_tsn_socket();
+		/* Disable the cut-through mode before configure the Qbu. */
+		tsn_ct_set(ifname, 0);
 		rc = tsn_qbu_set(ifname, pt_num);
 		close_tsn_socket();
 	}
