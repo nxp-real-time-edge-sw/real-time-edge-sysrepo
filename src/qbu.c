@@ -218,7 +218,7 @@ int config_qbu_per_port(sr_session_ctx_t *session, char *path, bool abort,
 
 config_qbu:
 	if (stc_cfg_flag) {
-		if (pt_num > 0)
+		if (pt_num >= 0)
 			rc = tsn_qbu_set_ethtool(ifname, tc_num, pt_num);
 		else
 			return rc;
