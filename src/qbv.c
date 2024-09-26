@@ -116,7 +116,7 @@ static int tsn_config_qbv_by_tc(sr_session_ctx_t *session, char *ifname,
 	host_name = get_host_name();
 	if (host_name && (strcasestr(host_name, "IMX8MP") ||
 	    strcasestr(host_name, "IMX8DXL") ||
-	    strcasestr(host_name, "IMX93")))
+	    strcasestr(host_name, "IMX93")) && !strcasestr(ifname, "swp"))
 		num_tc = 5;
 
 	base_time = pqbv->admin.base_time;
