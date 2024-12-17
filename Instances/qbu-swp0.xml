@@ -1,34 +1,21 @@
 <interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces"
 	    xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
 	    xmlns:dot1q="urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge"
-	    xmlns:preempt="urn:ieee:std:802.1Q:yang:ieee802-dot1q-preemption">
+	    xmlns:preempt-bridge="urn:ieee:std:802.1Q:yang:ieee802-dot1q-preemption-bridge">
 	<interface>
 		<name>swp0</name>
 		<enabled>true</enabled>
 		<type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
 		<dot1q:bridge-port>
-			<preempt:frame-preemption-parameters>
-				<preempt:frame-preemption-status-table>
-					<preempt:priority>0</preempt:priority>
-					<preempt:frame-preemption-status>express</preempt:frame-preemption-status>
-				</preempt:frame-preemption-status-table>
-				<preempt:frame-preemption-status-table>
-					<preempt:priority>1</preempt:priority>
-					<preempt:frame-preemption-status>express</preempt:frame-preemption-status>
-				</preempt:frame-preemption-status-table>
-				<preempt:frame-preemption-status-table>
-					<preempt:priority>2</preempt:priority>
-					<preempt:frame-preemption-status>preemptible</preempt:frame-preemption-status>
-				</preempt:frame-preemption-status-table>
-				<preempt:frame-preemption-status-table>
-					<preempt:priority>3</preempt:priority>
-					<preempt:frame-preemption-status>express</preempt:frame-preemption-status>
-				</preempt:frame-preemption-status-table>
-				<preempt:frame-preemption-status-table>
-					<preempt:priority>4</preempt:priority>
-					<preempt:frame-preemption-status>preemptible</preempt:frame-preemption-status>
-				</preempt:frame-preemption-status-table>
-			</preempt:frame-preemption-parameters>
+			<preempt-bridge:frame-preemption-parameters>
+				<preempt-bridge:frame-preemption-status-table>
+					<preempt-bridge:priority0>preemptable</preempt-bridge:priority0>
+					<preempt-bridge:priority1>express</preempt-bridge:priority1>
+					<preempt-bridge:priority2>preemptable</preempt-bridge:priority2>
+					<preempt-bridge:priority3>express</preempt-bridge:priority3>
+					<preempt-bridge:priority4>preemptable</preempt-bridge:priority4>
+				</preempt-bridge:frame-preemption-status-table>
+			</preempt-bridge:frame-preemption-parameters>
 		</dot1q:bridge-port>
 	</interface>
 </interfaces>

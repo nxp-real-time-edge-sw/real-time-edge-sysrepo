@@ -1,8 +1,7 @@
 <interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces"
 	    xmlns:sched="urn:ieee:std:802.1Q:yang:ieee802-dot1q-sched"
 	    xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
-	    xmlns:dot1q="urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge"
-	    xmlns:preempt="urn:ieee:std:802.1Q:yang:ieee802-dot1q-preemption">
+	    xmlns:dot1q="urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge">
 	<interface>
 		<name>eno0</name>
 		<enabled>true</enabled>
