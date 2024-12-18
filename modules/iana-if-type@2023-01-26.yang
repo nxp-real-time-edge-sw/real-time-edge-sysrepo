@@ -46,6 +46,66 @@ module iana-if-type {
     "IANA 'ifType definitions' registry.
      <http://www.iana.org/assignments/smi-numbers>";
 
+  revision 2023-01-26 {
+    description
+      "Fix incorrect quotation for previous 3 revision statements.";
+  }
+  
+  revision 2022-08-24 {
+    description
+      "Updated reference for ifType 303.";
+  }
+
+  revision 2022-08-17 {
+    description
+      "Changed gpon description to refer to G.984.";
+  }
+
+  revision 2022-03-07 {
+    description
+      "Coalesced revision history entries for 2018-06-28.";
+  }
+
+  revision 2021-06-21 {
+    description
+      "Corrected reference for ifType 303.";
+  }
+
+  revision 2021-05-17 {
+    description
+      "Registered ifType 303.";
+  }
+
+  revision 2021-04-22 {
+    description
+      "Registered ifType 302.";
+  }
+
+  revision 2021-04-01 {
+    description
+      "Updated reference for 301.";
+  }
+
+  revision 2021-02-18 {
+    description
+      "Registered ifType 301.";
+  }
+
+  revision 2020-08-27 {
+    description
+      "Added missing references.";
+  }
+
+  revision 2020-07-13 {
+    description
+      "Added identity cpri.";
+  }
+
+  revision 2020-07-10 {
+    description
+      "Registered ifType 300.";
+  }
+
   revision 2020-01-10 {
     description
       "Registered ifType 299.";
@@ -86,8 +146,7 @@ module iana-if-type {
 
   revision 2018-06-28 {
     description
-      "Registered ifType 294.
-       Registered ifType 293.";
+      "Registered ifTypes 293 and 294.";
   }
 
   revision 2018-06-22 {
@@ -1469,7 +1528,7 @@ module iana-if-type {
     base iana-interface-type;
     description
       "Gigabit-capable passive optical networks (G-PON) as per
-       ITU-T G.948.";
+       ITU-T G.984.";
   }
   identity vdsl2 {
     base iana-interface-type;
@@ -1608,11 +1667,17 @@ module iana-if-type {
     base iana-interface-type;
     description
       "CATV Downstream OFDM interface.";
+    reference
+      "Cable Modem Operations Support System Interface 
+       Specification";
   }
   identity docsOfdmaUpstream {
     base iana-interface-type;
     description
       "CATV Upstream OFDMA interface.";
+    reference
+      "Cable Modem Operations Support System Interface 
+       Specification";
   }
   identity gfast {
     base iana-interface-type;
@@ -1644,21 +1709,29 @@ module iana-if-type {
     base iana-interface-type;
     description
       "Cable SCTE 55-1 OOB Forward Channel.";
+    reference
+      "ANSI/SCTE 55-1 2009";
   }
   identity docsCableScte55d1RetOob {
     base iana-interface-type;
     description
       "Cable SCTE 55-1 OOB Return Channel.";
+    reference
+      "ANSI/SCTE 55-1 2009";
   }
   identity docsCableScte55d2DsOob {
     base iana-interface-type;
     description
       "Cable SCTE 55-2 OOB Downstream Channel.";
+    reference
+      "ANSI/SCTE 55-2 2008";
   }
   identity docsCableScte55d2UsOob {
     base iana-interface-type;
     description
       "Cable SCTE 55-2 OOB Upstream Channel.";
+    reference
+      "ANSI/SCTE 55-2 2008";
   }
   identity docsCableNdf {
     base iana-interface-type;
@@ -1674,11 +1747,15 @@ module iana-if-type {
     base iana-interface-type;
     description
       "Packet Transfer Mode.";
+    reference
+      "IEEE G.993.1, Annex H; IEEE G.993.2; IEEE G.9701";
   }
   identity ghn {
     base iana-interface-type;
     description
       "G.hn port.";
+    reference
+      "IEEE G.9961";
   }
   identity otnOtsi {
     base iana-interface-type;
@@ -1743,5 +1820,32 @@ module iana-if-type {
     reference
       "IEEE 1906.1-2015";
   }
+  identity cpri {
+    base iana-interface-type;
+    description
+      "Common Public Radio Interface.";
+    reference
+      "CPRI v7.0";
+  }
+  identity omni {
+    base iana-interface-type;
+    description
+      "Overlay Multilink Network Interface (OMNI).";
+    reference
+      "draft-templin-6man-omni-00";
+  }
+  identity roe {
+    base iana-interface-type;
+    description
+      "Radio over Ethernet Interface.";
+    reference
+      "1914.3-2018 - IEEE Standard for Radio over Ethernet Encapsulations and Mappings";
+  }
+  identity p2pOverLan {
+    base iana-interface-type;
+    description
+      "Point to Point over LAN interface.";
+    reference
+      "RFC 9296 - ifStackTable for the Point-to-Point (P2P) Interface over a LAN Type: Definition and Examples";
+  }
 }
-
