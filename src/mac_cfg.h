@@ -25,10 +25,11 @@
 
 #define MAC_ADDR_LEN	(32)
 #define BRIDGE_XPATH "/ieee802-dot1q-bridge:bridges/bridge"
-#define BRIDGE_COMPONENT_XPATH (BRIDGE_XPATH "/component")
 #define BRIDGE_ADDR_XPATH (BRIDGE_XPATH "/address")
 
-int mac_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-	sr_notif_event_t event, void *private_ctx);
+int mac_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                          const char *module_name, const char *path,
+                          sr_event_t event, uint32_t request_id,
+                          void *private_ctx);
 
 #endif

@@ -23,12 +23,14 @@
 
 #include <tsn/genl_tsn.h>
 #include "common.h"
+#include "main.h"
 
 #define QBV_TC_NUM (8)
 
-#define QBV_GATE_PARA_XPATH "/ieee802-dot1q-sched:gate-parameter-table"
-#define QBV_MAX_SDU_XPATH "/ieee802-dot1q-sched:gate-parameter-table/queue-max-sdu-table"
-#define QBV_MODULE_NAME "ieee802-dot1q-sched"
+#define QBV_MODULE		"ieee802-dot1q-sched-bridge"
+#define QBV_FEATURE		"scheduled-traffic"
+
+#define QBV_GATE_PARA_XPATH 	IF_XPATH BR_PORT "/" QBV_MODULE ":gate-parameter-table"
 
 struct sr_qbv_conf {
 	bool qbv_en;
@@ -39,7 +41,9 @@ struct sr_qbv_conf {
 	struct base_time_s basetime;
 };
 
-int qbv_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-		sr_notif_event_t event, void *private_ctx);
+int qbv_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                          const char *module_name, const char *path,
+                          sr_event_t event, uint32_t request_id,
+                          void *private_ctx);
 
 #endif

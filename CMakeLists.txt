@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(sysrepo-tsn)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wpedantic")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-format-truncation")
 
 # include custom Modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
@@ -29,9 +29,14 @@ include_directories(${NLGEN_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${NLGEN_LIBRARIES})
 
 # dependencies - sysrepo
-find_package(SYSREPO REQUIRED)
+find_package(Sysrepo REQUIRED)
 include_directories(${SYSREPO_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${SYSREPO_LIBRARIES})
+
+# dependencies - libyang
+find_package(LibYANG REQUIRED)
+include_directories(${LIBYANG_INCLUDE_DIRS})
+set(LIBS ${LIBS} ${LIBYANG_LIBRARIES})
 
 # dependencies - pthread
 find_package(Threads)
@@ -56,57 +61,18 @@ set(SOURCES
 
 find_package(PkgConfig)
 
-# get sysrepo plugins directory
-if (NOT SR_PLUGINS_DIR)
-    if (PKG_CONFIG_FOUND)
-        execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE} "--variable=SR_PLUGINS_DIR" "libsysrepo" OUTPUT_VARIABLE SR_PLUGINS_DIR)
-        string(STRIP ${SR_PLUGINS_DIR} SR_PLUGINS_DIR)
-    endif()
-endif()
-if (NOT SR_PLUGINS_DIR)
-    message(FATAL_ERROR "Cannot get sysrepo plugins directory due to missing pkg-config, set SR_PLUGINS_DIR manually.")
-endif()
-
 # find programs
-if (NOT SYSREPOCTL_EXECUTABLE)
-    find_program(SYSREPOCTL_EXECUTABLE sysrepoctl)
-endif()
+find_program(SYSREPOCTL_EXECUTABLE sysrepoctl)
 if (NOT SYSREPOCTL_EXECUTABLE)
     message(FATAL_ERROR "Unable to find sysrepoctl, set SYSREPOCTL_EXECUTABLE manually.")
 endif()
 
-if (NOT SYSREPOCFG_EXECUTABLE)
-    find_program(SYSREPOCFG_EXECUTABLE sysrepocfg)
-# find programs
-if (NOT SYSREPOCTL_EXECUTABLE)
-    find_program(SYSREPOCTL_EXECUTABLE sysrepoctl)
-endif()
-if (NOT SYSREPOCTL_EXECUTABLE)
-    message(FATAL_ERROR "Unable to find sysrepoctl, set SYSREPOCTL_EXECUTABLE manually.")
-endif()
-
-if (NOT SYSREPOCFG_EXECUTABLE)
-    find_program(SYSREPOCFG_EXECUTABLE sysrepocfg)
-endif()
+find_program(SYSREPOCFG_EXECUTABLE sysrepocfg)
 if (NOT SYSREPOCFG_EXECUTABLE)
     message(FATAL_ERROR "Unable to find sysrepocfg, set SYSREPOCFG_EXECUTABLE manually.")
 endif()
 
-if (NOT CHMOD_EXECUTABLE)
-    find_program(CHMOD_EXECUTABLE chmod)
-endif()
-if (NOT CHMOD_EXECUTABLE)
-    message(FATAL_ERROR "Unable to find chmod, set CHMOD_EXECUTABLE manually.")
-endif()
-
-endif()
-if (NOT SYSREPOCFG_EXECUTABLE)
-    message(FATAL_ERROR "Unable to find sysrepocfg, set SYSREPOCFG_EXECUTABLE manually.")
-endif()
-
-if (NOT CHMOD_EXECUTABLE)
-    find_program(CHMOD_EXECUTABLE chmod)
-endif()
+find_program(CHMOD_EXECUTABLE chmod)
 if (NOT CHMOD_EXECUTABLE)
     message(FATAL_ERROR "Unable to find chmod, set CHMOD_EXECUTABLE manually.")
 endif()

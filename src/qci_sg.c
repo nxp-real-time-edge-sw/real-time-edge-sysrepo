@@ -153,12 +153,10 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 {
 	int rc = SR_ERR_OK;
 	sr_xpath_ctx_t xp_ctx = {0};
-	uint8_t u8_val = 0;
 	uint64_t u64_val = 0;
 	char *nodename;
 	char *num_str;
 	char *index;
-	char err_msg[MSG_MAX_LEN] = {0};
 	struct tsn_qci_psfp_gcl *entry = sgi->sgconf.admin.gcl;
 	struct tc_qci_gates_para *para = &sqci_gates_para;
 	struct tc_qci_gate_entry *gate = NULL;
@@ -189,11 +187,8 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		} else if (!strcmp(num_str, "closed")) {
 			sgi->sgconf.admin.gate_states = false;
 		} else {
-			snprintf(err_msg, MSG_MAX_LEN, "Invalid '%s'", num_str);
-			sr_set_error(session, err_msg, value->xpath);
-
-			printf("ERROR: Invalid '%s' in %s!\n", num_str,
-			       value->xpath);
+			sr_session_set_error_message(session, "Invalid '%s'", num_str);
+			printf("ERROR: Invalid '%s' in %s!\n", num_str, value->xpath);
 			rc = SR_ERR_INVAL_ARG;
 			goto out;
 		}
@@ -215,8 +210,7 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		} else if (!strcmp(num_str, "closed")) {
 			(entry + u64_val)->gate_state = false;
 		} else {
-			snprintf(err_msg, MSG_MAX_LEN, "Invalid '%s'", num_str);
-			sr_set_error(session, err_msg, value->xpath);
+			sr_session_set_error_message(session, "Invalid '%s'", num_str);
 			rc = SR_ERR_INVAL_ARG;
 			goto out;
 		}
@@ -268,10 +262,8 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 	} else if (!strcmp(nodename, "denominator")) {
 		sgi->cycletime.denominator = value->data.uint32_val;
 		if (!sgi->cycletime.denominator) {
-			snprintf(err_msg, MSG_MAX_LEN,
-				 "The value of %s is zero", value->xpath);
-			sr_set_error(session, err_msg, value->xpath);
-
+			sr_session_set_error_message(session, "The value of %s is zero",
+					value->xpath);
 			printf("ERROR: denominator is zero!\n");
 			rc = SR_ERR_INVAL_ARG;
 			goto out;
@@ -313,7 +305,6 @@ int get_sg_per_port_per_id(sr_session_ctx_t *session, const char *path)
 	sr_val_t *old_value;
 	sr_val_t *new_value;
 	sr_val_t *value;
-	char err_msg[MSG_MAX_LEN] = {0};
 	char *cpname;
 	char *sg_id;
 	uint32_t sgid = 0;
@@ -325,12 +316,8 @@ int get_sg_per_port_per_id(sr_session_ctx_t *session, const char *path)
 	rc = sr_get_changes_iter(session, path, &it);
 
 	if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN,
-			 "Get changes from %s failed", path);
-		sr_set_error(session, err_msg, path);
-
-		printf("ERROR: %s sr_get_changes_iter: %s", __func__,
-		       sr_strerror(rc));
+		sr_session_set_error_message(session, "Get changes from %s failed", path);
+		printf("ERROR: %s sr_get_changes_iter: %s", __func__, sr_strerror(rc));
 		goto out;
 	}
 
@@ -362,11 +349,9 @@ int get_sg_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!sg_list_head) {
 			sg_list_head = new_list_node(QCI_T_SG, cpname, sgid);
 			if (!sg_list_head) {
-				snprintf(err_msg, MSG_MAX_LEN, "%s in %s\n",
-					 "Create new node failed",
-					 value->xpath);
-				sr_set_error(session, err_msg, path);
-				rc = SR_ERR_NOMEM;
+				sr_session_set_error_message(session, "%s in %s\n",
+						"Create new node failed", value->xpath);
+				rc = SR_ERR_NO_MEMORY;
 				goto out;
 			}
 			continue;
@@ -376,16 +361,17 @@ int get_sg_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!cur_node) {
 			cur_node = new_list_node(QCI_T_SG, cpname, sgid);
 			if (!cur_node) {
-				snprintf(err_msg, MSG_MAX_LEN, "%s in %s\n",
-					 "Create new node failed",
-					 value->xpath);
-				sr_set_error(session, err_msg, path);
-				rc = SR_ERR_NOMEM;
+				sr_session_set_error_message(session, "%s in %s\n",
+						"Create new node failed", value->xpath);
+				rc = SR_ERR_NO_MEMORY;
 				goto out;
 			}
 
 			add_node2list(sg_list_head, cur_node);
 		}
+
+		sr_free_val(old_value);
+		sr_free_val(new_value);
 	}
 	para->entry_cnt = cnt;
 
@@ -393,6 +379,7 @@ int get_sg_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		rc = SR_ERR_OK;
 
 out:
+    sr_free_change_iter(it);
 	return rc;
 }
 
@@ -404,13 +391,10 @@ int abort_sg_config(sr_session_ctx_t *session, char *path,
 	sr_val_t *old_value;
 	sr_val_t *new_value;
 	sr_change_iter_t *it;
-	char err_msg[MSG_MAX_LEN] = {0};
 
 	rc = sr_get_changes_iter(session, path, &it);
 	if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN, "Get changes from %s failed",
-			 path);
-		sr_set_error(session, err_msg, path);
+		sr_session_set_error_message(session, "Get changes from %s failed", path);
 		printf("ERROR: Get changes from %s failed\n", path);
 		goto out;
 	}
@@ -426,12 +410,16 @@ int abort_sg_config(sr_session_ctx_t *session, char *path,
 			continue;
 		}
 		parse_qci_sg(session, new_value, node->sg_ptr);
+
+		sr_free_val(old_value);
+		sr_free_val(new_value);
 	}
 
 	if (rc == SR_ERR_NOT_FOUND)
 		rc = SR_ERR_OK;
 
 out:
+    sr_free_change_iter(it);
 	return rc;
 }
 
@@ -441,7 +429,6 @@ int parse_sg_per_port_per_id(sr_session_ctx_t *session, bool abort)
 	sr_val_t *values;
 	size_t count;
 	size_t i;
-	char err_msg[MSG_MAX_LEN] = {0};
 	struct std_qci_list *cur_node = sg_list_head;
 	char xpath[XPATH_MAX_LEN] = {0,};
 
@@ -459,7 +446,7 @@ int parse_sg_per_port_per_id(sr_session_ctx_t *session, bool abort)
 			continue;
 		}
 
-		rc = sr_get_items(session, xpath, &values, &count);
+		rc = sr_get_items(session, xpath, 0, 0, &values, &count);
 		if (rc == SR_ERR_NOT_FOUND) {
 			rc = SR_ERR_OK;
 			/*
@@ -477,12 +464,8 @@ int parse_sg_per_port_per_id(sr_session_ctx_t *session, bool abort)
 			}
 			cur_node = cur_node->next;
 		} else if (rc != SR_ERR_OK) {
-			snprintf(err_msg, MSG_MAX_LEN,
-				 "Get items from %s failed", xpath);
-			sr_set_error(session, err_msg, xpath);
-			printf("ERROR: %s sr_get_items: %s\n", __func__,
-			       sr_strerror(rc));
-
+			sr_session_set_error_message(session, "Get items from %s failed", xpath);
+			printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
 			goto out;
 		} else {
 			for (i = 0; i < count; i++) {
@@ -513,9 +496,7 @@ out:
 int config_sg(sr_session_ctx_t *session)
 {
 	int rc = SR_ERR_OK;
-	char err_msg[MSG_MAX_LEN] = {0};
 	struct std_qci_list *cur_node = sg_list_head;
-	char xpath[XPATH_MAX_LEN] = {0,};
 	uint64_t time;
 	struct tsn_qci_psfp_sgi_conf *sgi;
 
@@ -536,15 +517,8 @@ int config_sg(sr_session_ctx_t *session)
 					  cur_node->sg_ptr->sg_handle,
 					  cur_node->sg_ptr->enable, sgi);
 		if (rc < 0) {
-			sprintf(err_msg,
-				"failed to set stream gate, %s!",
-				strerror(-rc));
-			snprintf(xpath, XPATH_MAX_LEN,
-				 "%s[name='%s']%s[%s='%u']//*",
-				 BRIDGE_COMPONENT_XPATH, cur_node->sf_ptr->port,
-				 SGI_XPATH, "stream-gate-instance-id",
-				 cur_node->sg_ptr->sg_id);
-			sr_set_error(session, err_msg, xpath);
+			sr_session_set_error_message(session, "failed to set stream gate, %s!",
+					strerror(-rc));
 			cur_node->apply_st = APPLY_SET_ERR;
 			goto cleanup;
 		} else {
@@ -688,11 +662,17 @@ int qci_sg_clear_para(void)
 	return 0;
 }
 
-int qci_sg_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-		sr_notif_event_t event, void *private_ctx)
+int qci_sg_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                             const char *module_name, const char *path,
+                             sr_event_t event, uint32_t request_id,
+                             void *private_ctx)
 {
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0,};
+
+	/* configure Qbv only when receiving the event SR_EV_DONE */
+	if (event != SR_EV_DONE)
+		return rc;
 
 	snprintf(xpath, XPATH_MAX_LEN, "%s%s//*", BRIDGE_COMPONENT_XPATH,
 		 QCISG_XPATH);
@@ -705,24 +685,11 @@ int qci_sg_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 	stc_cfg_flag = false;
 #endif
 
-	switch (event) {
-	case SR_EV_VERIFY:
-		rc = qci_sg_config(session, xpath, false);
-		break;
-	case SR_EV_ENABLED:
-		rc = qci_sg_config(session, xpath, false);
-		break;
-	case SR_EV_APPLY:
+	rc = qci_sg_config(session, xpath, false);
+
+	if (sg_list_head) {
 		free_list(sg_list_head, QCI_T_SG);
 		sg_list_head = NULL;
-		break;
-	case SR_EV_ABORT:
-		rc = qci_sg_config(session, xpath, true);
-		free_list(sg_list_head, QCI_T_SG);
-		sg_list_head = NULL;
-		break;
-	default:
-		break;
 	}
 
 	return rc;

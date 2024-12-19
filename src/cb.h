@@ -25,7 +25,10 @@
 
 #define CB_XPATH  ("/ieee802-dot1cb-frer:frer")
 #define PPATH  ("/ieee802-dot1cb-frer:frer/sequence-identification")
-int cb_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-	sr_notif_event_t event, void *private_ctx);
+
+int cb_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                         const char *module_name, const char *path,
+                         sr_event_t event, uint32_t request_id,
+                         void *private_ctx);
 
 #endif

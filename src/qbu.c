@@ -3,7 +3,7 @@
  * @author Xiaolin He
  * @brief Application to configure TSN-QBU function based on sysrepo datastore.
  *
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2024 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,309 +21,180 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
 #include <inttypes.h>
-#include <cjson/cJSON.h>
+#include <libyang/libyang.h>
+#include <sysrepo.h>
+#include <assert.h>
 
 #include "common.h"
-#include "main.h"
 #include "qbu.h"
 
-static bool stc_cfg_flag;
-static char sqbu_cmd[MAX_CMD_LEN];
-static char sqbu_subcmd[MAX_CMD_LEN];
+#define NODE_SET_SIZE	(20U)
 
-void clr_qbu(sr_val_t *val, uint32_t *tc, uint8_t *pt,
-		sr_change_oper_t *oper)
+static uint32_t get_preemptible_queues_mask(const struct lyd_node *node)
 {
-	char *tc_str;
-	sr_xpath_ctx_t xp_ctx = {0};
-	char *nodename;
+	const char *key = "priority";
+    struct lyd_node *iter;
+	uint32_t mask = 0;
+	uint32_t prio = 0;
 
-	if (!val || val->type == SR_LIST_T
-	    || val->type == SR_CONTAINER_PRESENCE_T)
-		return;
+	LY_LIST_FOR(lyd_child(node), iter) {
+		const char *nodename = LYD_NAME(iter);
 
-	tc_str = sr_xpath_key_value(val->xpath,
-				    "frame-preemption-status-table",
-				    "priority", &xp_ctx);
-	if (!tc_str)
-		return;
+		if (!strncmp(nodename, key, strlen(key))) {
 
-	sr_xpath_recover(&xp_ctx);
-	nodename = sr_xpath_node_name(val->xpath);
-	if (!nodename)
-		return;
-	if (strcmp(nodename, "priority") == 0)
-		*tc = val->data.uint8_val;
-	else if (strcmp(nodename, "frame-preemption-status") == 0)
-		*pt &= ~(1 << *tc);
-}
-
-int parse_qbu(sr_val_t *val, uint32_t *tc, uint8_t *pt,
-		sr_change_oper_t *oper)
-{
-	char *tc_str;
-	sr_xpath_ctx_t xp_ctx = {0};
-	char *nodename;
-	int rc;
-
-	if (!val || val->type == SR_LIST_T
-		|| val->type == SR_CONTAINER_PRESENCE_T)
-		return 1;
-
-	tc_str = sr_xpath_key_value(val->xpath,
-				    "frame-preemption-status-table",
-				    "priority", &xp_ctx);
-	if (!tc_str)
-		return 1;
-
-	rc = 0;
-	sr_xpath_recover(&xp_ctx);
-	nodename = sr_xpath_node_name(val->xpath);
-	if (!nodename)
-		return 1;
-	if (strcmp(nodename, "priority") == 0) {
-		*tc = val->data.uint8_val;
-	} else if (strcmp(nodename, "frame-preemption-status") == 0) {
-		if (oper && *oper == SR_OP_DELETED)
-			*pt &= ~(1 << *tc);
-		else if (strcmp(val->data.string_val, "preemptible") == 0)
-			*pt |=  (1 << *tc);
-		else if (strcmp(val->data.string_val, "express") == 0)
-			*pt &= ~(1 << *tc);
-	} else {
-		rc = 1;
-	}
-
-	return rc;
-}
-
-int abort_qbu_config(sr_session_ctx_t *session, char *path,
-		uint32_t *tc_num, uint8_t *pt_num)
-{
-	int rc = SR_ERR_OK;
-	sr_change_oper_t oper;
-	sr_val_t *old_value;
-	sr_val_t *new_value;
-	sr_change_iter_t *it;
-	char err_msg[MSG_MAX_LEN] = {0};
-
-	rc = sr_get_changes_iter(session, path, &it);
-	if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN,
-			 "Get changes from %s failed", path);
-		sr_set_error(session, err_msg, path);
-
-		printf("ERROR: Get changes from %s failed\n", path);
-		goto out;
-	}
-	while (SR_ERR_OK == (rc = sr_get_change_next(session, it, &oper,
-						     &old_value,
-						     &new_value))) {
-		if (oper == SR_OP_DELETED) {
-			if (old_value) {
-				clr_qbu(old_value, tc_num, pt_num, &oper);
-				continue;
-			} else {
-				*pt_num = 0;
+			/* get the priority number from the last character of the nodename */
+			prio = nodename[strlen(key)] - '0';
+			if (!strcmp(lyd_get_value(iter), "preemptable")) {
+				mask |= (1 << prio);
 			}
 		}
-		parse_qbu(old_value, tc_num, pt_num, &oper);
 	}
-	if (rc == SR_ERR_NOT_FOUND)
-		rc = SR_ERR_OK;
-
-out:
-	return rc;
+	return mask;
 }
 
-int tsn_qbu_set_ethtool(char *ifname, uint32_t tc, uint8_t pt)
+static int config_frame_preemption(const char *ifname,
+								   const struct lyd_node *node,
+								   const uint32_t value)
 {
-	int rc = SR_ERR_OK;
-	pid_t sysret = 0;
+#ifdef SYSREPO_TSN_TC
+	const char *cmd_enable = "ethtool --set-frame-preemption %s fp on preemptible-queues-mask 0x%02X min-frag-size %d";
+	const char *cmd_disable = "ethtool --set-frame-preemption %s disabled";
+	char cmd_buff[MAX_CMD_LEN];
+	int sysret = 0;
 
-	snprintf(sqbu_cmd, MAX_CMD_LEN, "ethtool --set-frame-preemption %s ", ifname);
-
-	snprintf(sqbu_subcmd, MAX_CMD_LEN, "preemptible-queues-mask 0x%02X ", pt);
-	strncat(sqbu_cmd, sqbu_subcmd, MAX_CMD_LEN - 1 - strlen(sqbu_cmd));
-
-	sysret = system(sqbu_cmd);
-	if (SYSCALL_OK(sysret)) {
-		printf("ok. cmd:%s\n", sqbu_cmd);
+	if (value != 0) {
+		snprintf(cmd_buff, sizeof(cmd_buff), cmd_enable, ifname, value, QBU_MIN_FRAG_SIZE);
 	} else {
-		printf("ret:0x%X cmd:%s\n", sysret, sqbu_cmd);
-		rc = SR_ERR_INVAL_ARG;
+		snprintf(cmd_buff, sizeof(cmd_buff), cmd_disable, ifname);
 	}
 
-	return rc;
-}
+	sysret = system(cmd_buff);
+	if (!SYSCALL_OK(sysret)) {
+		return SR_ERR_INVAL_ARG;
+	}
 
-int config_qbu_per_port(sr_session_ctx_t *session, char *path, bool abort,
-		char *ifname)
-{
+	return SR_ERR_OK;
+#else
 	int rc = SR_ERR_OK;
-	sr_change_oper_t oper;
-	sr_val_t *values;
-	size_t count;
-	size_t i;
-	uint32_t tc_num = 0;
-	uint8_t pt_num = 0;
-	int valid = 0;
-	char xpath[XPATH_MAX_LEN] = {0};
-	char err_msg[MSG_MAX_LEN] = {0};
 
-	rc = sr_get_items(session, path, &values, &count);
-	if (rc == SR_ERR_NOT_FOUND) {
-		/*
-		 * If can't find any item, we should check whether this
-		 * container was deleted.
-		 */
-		if (is_del_oper(session, path)) {
-			printf("WARN: %s was deleted, disable %s",
-			       path, "this Instance.\n");
-			pt_num = 0;
-			goto config_qbu;
-		} else {
-			printf("WARN: %s sr_get_items: %s\n", __func__,
-			       sr_strerror(rc));
-			return SR_ERR_OK;
-		}
-	} else if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN,
-			 "Get items from %s failed", path);
-		sr_set_error(session, err_msg, path);
-
-		printf("ERROR: %s sr_get_items: %s\n", __func__,
-		       sr_strerror(rc));
-		return rc;
-	}
-
-	for (i = 0; i < count; i++) {
-		if (values[i].type == SR_LIST_T
-		    || values[i].type == SR_CONTAINER_PRESENCE_T)
-			continue;
-
-		if (!parse_qbu(&values[i], &tc_num, &pt_num, &oper))
-			valid++;
-	}
-	if (!valid)
-		return rc;
-
-	if (abort) {
-		rc = abort_qbu_config(session, path, &tc_num, &pt_num);
-		if (rc != SR_ERR_OK)
-			goto cleanup;
-	}
-
-config_qbu:
-	if (stc_cfg_flag) {
-		if (pt_num > 0)
-			rc = tsn_qbu_set_ethtool(ifname, tc_num, pt_num);
-		else
-			return rc;
-	} else {
-		init_tsn_socket();
-		/* Disable the cut-through mode before configure the Qbu. */
-		tsn_ct_set(ifname, 0);
-		rc = tsn_qbu_set(ifname, pt_num);
-		close_tsn_socket();
-	}
+	init_tsn_socket();
+	/* Disable the cut-through mode before configure the Qbu. */
+	tsn_ct_set(ifname, 0);
+	rc = tsn_qbu_set(ifname, value);
+	close_tsn_socket();
 
 	if (rc < 0) {
-		snprintf(xpath, XPATH_MAX_LEN, "%s[name='%s']%s/%s:*//*",
-			 IF_XPATH, ifname, BR_PORT, QBU_MODULE_NAME);
-		snprintf(err_msg, MSG_MAX_LEN, "Set Qbu error: %s",
-			 strerror(-rc));
-		sr_set_error(session, err_msg, xpath);
-
-		printf("set qbu error, %s!\n", strerror(-rc));
-		rc = errno2sp(-rc);
-		goto cleanup;
+		return SR_ERR_INVAL_ARG;
 	}
-
-cleanup:
-	sr_free_values(values, count);
-
-	return rc;
+	return SR_ERR_OK;
+#endif
 }
 
-int qbu_config(sr_session_ctx_t *session, const char *path, bool abort)
+static const struct lyd_node *is_path_include(const struct lyd_node *node,
+											  const char *node_name)
 {
-	int rc = SR_ERR_OK;
-	sr_xpath_ctx_t xp_ctx = {0};
-	sr_change_iter_t *it;
-	sr_val_t *old_value;
-	sr_val_t *new_value;
-	sr_val_t *value;
-	sr_change_oper_t oper;
-	char *ifname;
-	char ifname_bak[IF_NAME_MAX_LEN] = {0};
-	char xpath[XPATH_MAX_LEN] = {0};
-	char err_msg[MSG_MAX_LEN] = {0};
+    const struct lyd_node *iter = NULL;
 
-	rc = sr_get_changes_iter(session, path, &it);
-	if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN, "Get changes from %s failed",
-			 path);
-		sr_set_error(session, err_msg, path);
-
-		printf("ERROR: %s sr_get_changes_iter: %s\n", __func__,
-		       sr_strerror(rc));
-		goto cleanup;
-	}
-
-	while (SR_ERR_OK == (rc = sr_get_change_next(session, it,
-					&oper, &old_value, &new_value))) {
-		value = new_value ? new_value : old_value;
-		ifname = sr_xpath_key_value(value->xpath, "interface",
-					    "name", &xp_ctx);
-		if (!ifname)
-			continue;
-
-		if (strcmp(ifname, ifname_bak)) {
-			snprintf(ifname_bak, IF_NAME_MAX_LEN, "%s", ifname);
-			snprintf(xpath, XPATH_MAX_LEN,
-				 "%s[name='%s']%s/%s:*//*", IF_XPATH,
-				 ifname, BR_PORT, QBU_MODULE_NAME);
-			rc = config_qbu_per_port(session, xpath, abort, ifname);
-			if (rc != SR_ERR_OK)
-				break;
+	for (iter = node; iter; iter = lyd_parent(iter)) {
+		if (!strcmp(LYD_NAME(iter), node_name)) {
+			return iter;
 		}
 	}
-	if (rc == SR_ERR_NOT_FOUND)
-		rc = SR_ERR_OK;
-cleanup:
-	return rc;
+
+	return NULL;
 }
 
-int qbu_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-		sr_notif_event_t event, void *private_ctx)
+static const char *get_ifname(const struct lyd_node *node)
 {
-	int rc = SR_ERR_OK;
-	char xpath[XPATH_MAX_LEN] = {0};
+    const struct lyd_node *target = NULL;
+    struct lyd_node *output = NULL;
 
-#ifdef SYSREPO_TSN_TC
-	stc_cfg_flag = true;
-#else
-	stc_cfg_flag = false;
-#endif
+	target = is_path_include(node, "interface");
 
-	snprintf(xpath, XPATH_MAX_LEN, "%s%s/%s:*//*", IF_XPATH, BR_PORT,
-		 QBU_MODULE_NAME);
-	switch (event) {
-	case SR_EV_VERIFY:
-	case SR_EV_ENABLED:
-		rc = qbu_config(session, xpath, false);
-		break;
-	case SR_EV_APPLY:
-		break;
-	case SR_EV_ABORT:
-		rc = qbu_config(session, xpath, true);
-		break;
-	default:
-		break;
+	if (target && !lyd_find_path(target, "name", 0, &output) && output) {
+		return lyd_get_value(output);
+	} else {
+		return NULL;
 	}
+}
+
+static int check_and_add(const struct lyd_node **set, const struct lyd_node *node)
+{
+	const struct lyd_node **iter = set;
+
+	while (*iter) {
+		assert(((iter - set) / sizeof(*iter)) < NODE_SET_SIZE);
+		if (*iter == node) {
+			return -1;
+		}
+		iter++;
+	}
+	*iter = node;
+
+	return 0;
+}
+
+int qbu_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                          const char *module_name, const char *path,
+                          sr_event_t event, uint32_t request_id,
+                          void *private_ctx)
+{
+	char xpath[XPATH_MAX_LEN] = {0};
+	sr_change_iter_t *iter = NULL;
+    const struct lyd_node *node = NULL;
+    sr_change_oper_t op;
+	int rc = SR_ERR_OK;
+
+	/* configure Qbu only when receiving the event SR_EV_DONE */
+	if (event != SR_EV_DONE)
+		return rc;
+
+	snprintf(xpath, XPATH_MAX_LEN, "%s//.", QBU_PARA_XPATH);
+
+	rc = sr_get_changes_iter(session, xpath, &iter);
+	if (rc != SR_ERR_OK) {
+		return rc;
+	}
+
+    while ((rc = sr_get_change_tree_next(session, iter, &op, &node,
+					NULL, NULL, NULL)) == SR_ERR_OK) {
+
+		const struct lyd_node *set[NODE_SET_SIZE] = { 0 };
+		const struct lyd_node *target = NULL;
+		char *ifname = NULL;
+		uint32_t value = 0;
+
+		target = is_path_include(node, "frame-preemption-status-table");
+		if (target != NULL) {
+
+			ifname = strdup(get_ifname(node));
+            if ((op == SR_OP_CREATED) || (op == SR_OP_MODIFIED)) {
+
+				if (check_and_add(&set[0], target)) {
+					continue;
+				}
+				value = get_preemptible_queues_mask(node);
+				rc = config_frame_preemption(ifname, target, value);
+
+			} else if (op == SR_OP_DELETED) {
+				value = 0;
+				rc = config_frame_preemption(ifname, target, value);
+			}
+			free(ifname);
+
+			if (rc) {
+				char *__path = lyd_path(target, LYD_PATH_STD, NULL, 0);
+				sr_session_set_error_message(session,
+						"Failed to config frame preemption (Qbu): %s", __path);
+				free(__path);
+
+				rc = SR_ERR_UNSUPPORTED;
+				break;
+			}
+		}
+	}
+    sr_free_change_iter(iter);
 
 	return rc;
 }

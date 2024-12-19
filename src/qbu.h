@@ -21,10 +21,19 @@
 #ifndef __QBU_H_
 #define __QBU_H_
 
-#define QBU_XPATH "/ieee802-dot1q-preemption:frame-preemption-parameters"
-#define QBU_MODULE_NAME "ieee802-dot1q-preemption"
+#include "main.h"
 
-int qbu_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-		sr_notif_event_t event, void *private_ctx);
+#define QBU_MODULE 			"ieee802-dot1q-preemption-bridge"
+#define QBU_FEATURE			"frame-preemption"
 
+#define QBU_PARA_XPATH 		IF_XPATH BR_PORT "/" QBU_MODULE ":frame-preemption-parameters"
+#define QBU_STATUS_TABLE_XPATH 	"/" QBU_MODULE ":frame-preemption-status-table"
+
+/* define the minimum fragment size */
+#define QBU_MIN_FRAG_SIZE	(60U)
+
+int qbu_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                          const char *module_name, const char *path,
+                          sr_event_t event, uint32_t request_id,
+                          void *private_ctx);
 #endif

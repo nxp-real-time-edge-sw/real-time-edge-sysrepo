@@ -24,14 +24,18 @@
 #include <tsn/genl_tsn.h>
 #include "common.h"
 
-#define QCISFSG_NM "ieee802-dot1q-stream-filters-gates"
-#define QCIPSFP_NM "ieee802-dot1q-psfp"
-#define QCISF_XPATH "/ieee802-dot1q-stream-filters-gates:stream-filters"
-#define QCISG_XPATH "/ieee802-dot1q-stream-filters-gates:stream-gates"
-#define QCIFM_XPATH "/ieee802-dot1q-psfp:flow-meters"
-#define SFI_XPATH (QCISF_XPATH "/stream-filter-instance-table")
-#define SGI_XPATH (QCISG_XPATH "/stream-gate-instance-table")
-#define FMI_XPATH (QCIFM_XPATH "/flow-meter-instance-table")
+#define QCIPSFP_NM	"ieee802-dot1q-psfp-bridge"
+
+#define QCISF_XPATH	"/" QCIPSFP_NM ":stream-filters/"
+#define SFI_XPATH   QCISF_XPATH "stream-filter-instance-table"
+
+#define QCISG_XPATH "/" QCIPSFP_NM ":stream-gates/"
+#define SGI_XPATH   QCISG_XPATH "stream-gate-instance-table"
+
+#define QCIFM_XPATH "/" QCIPSFP_NM ":flow-meters/"
+#define FMI_XPATH   QCIFM_XPATH "flow-meter-instance-table"
+
+#define FEATURE
 
 enum qci_type {
 	QCI_T_SF = 1,
@@ -136,12 +140,20 @@ struct std_qci_list *is_node_in_list(struct std_qci_list *list,
 		char *port, uint32_t id, enum qci_type type);
 void add_node2list(struct std_qci_list *list, struct std_qci_list *node);
 
-int qci_sf_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-		sr_notif_event_t event, void *private_ctx);
-int qci_sg_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-		sr_notif_event_t event, void *private_ctx);
-int qci_fm_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-		sr_notif_event_t event, void *private_ctx);
+int qci_sf_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                             const char *module_name, const char *path,
+                             sr_event_t event, uint32_t request_id,
+                             void *private_ctx);
+
+int qci_sg_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                             const char *module_name, const char *path,
+                             sr_event_t event, uint32_t request_id,
+                             void *private_ctx);
+
+int qci_fm_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                             const char *module_name, const char *path,
+                             sr_event_t event, uint32_t request_id,
+                             void *private_ctx);
 
 int qci_init_para(void);
 

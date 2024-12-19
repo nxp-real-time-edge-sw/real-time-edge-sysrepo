@@ -20,6 +20,8 @@
 
 #include "brtc_cfg.h"
 
+#define MAX_SUBCMD_LEN (64U)
+
 struct item_qdisc {
 	char action[MAX_PARA_LEN];
 	char block[MAX_PARA_LEN];
@@ -53,9 +55,6 @@ struct item_cfg {
 	struct item_filter filter;
 };
 static struct item_cfg sitem_conf;
-
-static char stc_cmd[MAX_CMD_LEN];
-static char stc_subcmd[MAX_CMD_LEN];
 
 static int change_mac_format(char *pbuf)
 {
@@ -167,9 +166,8 @@ static int parse_item(sr_session_ctx_t *session, char *path,
 	size_t count;
 	int rc = SR_ERR_OK;
 	sr_val_t *values = NULL;
-	char err_msg[MSG_MAX_LEN] = {0};
 
-	rc = sr_get_items(session, path, &values, &count);
+	rc = sr_get_items(session, path, 0, 0, &values, &count);
 	if (rc == SR_ERR_NOT_FOUND) {
 		/*
 		 * If can't find any item, we should check whether this
@@ -185,12 +183,8 @@ static int parse_item(sr_session_ctx_t *session, char *path,
 			return SR_ERR_OK;
 		}
 	} else if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN,
-			 "Get items from %s failed", path);
-		sr_set_error(session, err_msg, path);
-
-		printf("ERROR: %s sr_get_items: %s\n", __func__,
-		       sr_strerror(rc));
+		sr_session_set_error_message(session, "Get items from %s failed", path);
+		printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
 		return rc;
 	}
 
@@ -219,7 +213,6 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 	sr_change_iter_t *it = NULL;
 	sr_xpath_ctx_t xp_ctx = {0};
 	char xpath[XPATH_MAX_LEN] = {0};
-	char err_msg[MSG_MAX_LEN] = {0};
 	char ifname_bak[MAX_VLAN_LEN] = {0};
 	struct item_cfg *conf = &sitem_conf;
 
@@ -229,12 +222,8 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 
 	rc = sr_get_changes_iter(session, xpath, &it);
 	if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN,
-			 "Get changes from %s failed", xpath);
-		sr_set_error(session, err_msg, xpath);
-
-		printf("ERROR: %s sr_get_changes_iter: %s\n", __func__,
-		       sr_strerror(rc));
+		sr_session_set_error_message(session, "Get changes from %s failed", xpath);
+		printf("ERROR: %s sr_get_changes_iter: %s\n", __func__, sr_strerror(rc));
 		goto cleanup;
 	}
 
@@ -267,6 +256,7 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 		rc = SR_ERR_OK;
 
 cleanup:
+    sr_free_change_iter(it);
 	return rc;
 }
 
@@ -275,9 +265,11 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 	char *host_name = NULL;
 	char *chain_id = "";
 	char *chain_next = "";
-	pid_t sysret = 0;
-	int rc = SR_ERR_OK;
+	int sysret = 0;
+	int rc = SR_ERR_INVAL_ARG;
 	struct item_cfg *conf = &sitem_conf;
+	char stc_cmd[MAX_CMD_LEN];
+	char stc_subcmd[MAX_SUBCMD_LEN];
 
 	if (abort) {
 		memset(conf, 0, sizeof(struct item_cfg));
@@ -303,112 +295,107 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 
 	snprintf(stc_cmd, MAX_CMD_LEN, "tc qdisc %s dev %s %s\n",
 		conf->qdisc.action, conf->qdisc.ifname, conf->qdisc.block);
-	system(stc_cmd);
+
 	printf("qdisc: %s\n", stc_cmd);
+
+	sysret = system(stc_cmd);
+	if (!SYSCALL_OK(sysret)) {
+		goto error;
+	}
 
 	snprintf(stc_cmd, MAX_CMD_LEN, "tc filter %s dev %s ",
 		conf->filter.action, conf->filter.ifname);
 
 	if (strlen(conf->filter.parent) > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "parent %s ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "parent %s ",
 				conf->filter.parent);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (strlen(conf->filter.protocol) > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "%s protocol %s ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "%s protocol %s ",
 				chain_id, conf->filter.protocol);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (strlen(conf->filter.type) > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "%s ", conf->filter.type);
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "%s ", conf->filter.type);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (strlen(conf->filter.skip_type) > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "%s ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "%s ",
 				conf->filter.skip_type);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (conf->filter.vlan_id > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "vlan_id %d ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "vlan_id %d ",
 				conf->filter.vlan_id);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (conf->filter.priority > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "vlan_prio %d ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "vlan_prio %d ",
 				conf->filter.priority);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (strlen(conf->filter.src_ip) > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "src_ip %s ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "src_ip %s ",
 				conf->filter.src_ip);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (strlen(conf->filter.dst_ip) > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "dst_ip %s ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "dst_ip %s ",
 				conf->filter.dst_ip);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (conf->filter.src_port > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "src_port %d ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "src_port %d ",
 				conf->filter.src_port);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (conf->filter.dst_port > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "dst_port %d ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "dst_port %d ",
 				conf->filter.dst_port);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (strlen(conf->filter.src_mac) > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "src_mac %s ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "src_mac %s ",
 				conf->filter.src_mac);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (strlen(conf->filter.dst_mac) > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "dst_mac %s ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "dst_mac %s ",
 				conf->filter.dst_mac);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 	if (strlen(conf->filter.action_spec) > 0) {
-		snprintf(stc_subcmd, MAX_CMD_LEN, "action %s %s ",
+		snprintf(stc_subcmd, MAX_SUBCMD_LEN, "action %s %s ",
 				conf->filter.action_spec, chain_next);
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
-	sysret = system(stc_cmd);
-	if (SYSCALL_OK(sysret))
-		rc = SR_ERR_OK;
-	else
-		rc = SR_ERR_INVAL_ARG;
+
 	printf("filter: %s\n", stc_cmd);
 
+	sysret = system(stc_cmd);
+	if (!SYSCALL_OK(sysret)) {
+		goto error;
+	}
+	return SR_ERR_OK;
+
+error:
 	return rc;
 }
 
-int brtc_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-		sr_notif_event_t event, void *private_ctx)
+int brtc_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                           const char *module_name, const char *path,
+                           sr_event_t event, uint32_t request_id,
+                           void *private_ctx)
 {
 	int rc = SR_ERR_OK;
-	char xpath[XPATH_MAX_LEN] = {0};
 
-	snprintf(xpath, XPATH_MAX_LEN, "%s", path);
+	if (event != SR_EV_DONE)
+		return rc;
 
-	switch (event) {
-	case SR_EV_VERIFY:
-		rc = parse_config(session, xpath);
-		if (rc == SR_ERR_OK)
-			rc = set_config(session, false);
-		break;
-	case SR_EV_ENABLED:
-		rc = parse_config(session, xpath);
-		if (rc == SR_ERR_OK)
-			rc = set_config(session, false);
-		break;
-	case SR_EV_APPLY:
-		break;
-	case SR_EV_ABORT:
-		rc = set_config(session, true);
-		break;
-	default:
-		break;
+	rc = parse_config(session, path);
+	if (rc == SR_ERR_OK) {
+		rc = set_config(session, false);
 	}
 
 	return rc;

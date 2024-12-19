@@ -74,7 +74,7 @@ int errno2sp(int errtsn)
 		errsp = SR_ERR_INVAL_ARG;
 		break;
 	case ENOMEM:
-		errsp = SR_ERR_NOMEM;
+		errsp = SR_ERR_NO_MEMORY;
 		break;
 	default:
 		errsp = SR_ERR_INVAL_ARG;
@@ -149,7 +149,7 @@ void print_config_iter(sr_session_ctx_t *session, const char *path)
 	if (!path || !session)
 		return;
 
-	rc = sr_get_items(session, path, &values, &count);
+	rc = sr_get_items(session, path, 0, 0, &values, &count);
 	if (rc != SR_ERR_OK) {
 		printf("Error by sr_get_items: %s", sr_strerror(rc));
 		return;
@@ -158,27 +158,6 @@ void print_config_iter(sr_session_ctx_t *session, const char *path)
 		sr_print_val(&values[i]);
 
 	sr_free_values(values, count);
-}
-
-void print_ev_type(sr_notif_event_t event)
-{
-	switch (event) {
-	case SR_EV_VERIFY:
-		printf("\n--- verify mode ---\n");
-		break;
-	case SR_EV_ENABLED:
-		printf("\n--- enable mode ---\n");
-		break;
-	case SR_EV_APPLY:
-		printf("\n--- apply mode ---\n");
-		break;
-	case SR_EV_ABORT:
-		printf("\n--- abort mode ---\n");
-		break;
-	default:
-		printf("\n--- unknown mode ---\n");
-		break;
-	}
 }
 
 int str_to_num(int type, char *str, uint64_t *num)
@@ -328,13 +307,10 @@ bool is_del_oper(sr_session_ctx_t *session, char *path)
 	sr_val_t *old_value;
 	sr_val_t *new_value;
 	sr_change_iter_t *it;
-	char err_msg[MSG_MAX_LEN] = {0};
 
 	rc = sr_get_changes_iter(session, path, &it);
 	if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN, "Get changes from %s failed",
-			 path);
-		sr_set_error(session, err_msg, path);
+		sr_session_set_error_message(session, "Get changes from %s failed", path);
 		printf("ERROR: Get changes from %s failed\n", path);
 		return false;
 	}
@@ -344,6 +320,11 @@ bool is_del_oper(sr_session_ctx_t *session, char *path)
 		ret = false;
 	else if (oper == SR_OP_DELETED)
 		ret = true;
+
+	sr_free_val(old_value);
+	sr_free_val(new_value);
+
+    sr_free_change_iter(it);
 	return ret;
 }
 

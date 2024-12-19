@@ -21,10 +21,15 @@
 #ifndef __MAIN_H_
 #define __MAIN_H_
 
-#define IF_XPATH "/ietf-interfaces:interfaces/interface"
-#define BR_PORT "/ieee802-dot1q-bridge:bridge-port"
-#define BRIDGE_XPATH "/ieee802-dot1q-bridge:bridges/bridge"
-#define BRIDGE_COMPONENT_XPATH (BRIDGE_XPATH "/component")
+#include <stdlib.h>
+
+#include "common.h"
+
+#define IF_XPATH 				"/ietf-interfaces:interfaces/interface"
+#define BRIDGE_XPATH 			"/ieee802-dot1q-bridge:bridges/bridge"
+#define BRIDGE_COMPONENT_XPATH 	BRIDGE_XPATH "/component"
+
+#define BR_PORT 				"/ieee802-dot1q-bridge:bridge-port"
 
 extern struct sr_tsn_callback file_clbks;
 

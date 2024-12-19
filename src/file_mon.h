@@ -33,7 +33,7 @@ struct sr_tsn_callback {
 	struct {
 		const char *f_path;
 		void (*func)(void);
-	} callbacks[];
+	} callbacks[4];
 };
 
 struct file_mon {

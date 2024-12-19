@@ -191,9 +191,8 @@ static int parse_item(sr_session_ctx_t *session, char *path,
 	size_t count;
 	int rc = SR_ERR_OK;
 	sr_val_t *values = NULL;
-	char err_msg[MSG_MAX_LEN] = {0};
 
-	rc = sr_get_items(session, path, &values, &count);
+	rc = sr_get_items(session, path, 0, 0, &values, &count);
 	if (rc == SR_ERR_NOT_FOUND) {
 		/*
 		 * If can't find any item, we should check whether this
@@ -209,12 +208,8 @@ static int parse_item(sr_session_ctx_t *session, char *path,
 			return SR_ERR_OK;
 		}
 	} else if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN,
-			 "Get items from %s failed", path);
-		sr_set_error(session, err_msg, path);
-
-		printf("ERROR: %s sr_get_items: %s\n", __func__,
-		       sr_strerror(rc));
+		sr_session_set_error_message(session, "Get items from %s failed", path);
+		printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
 		return rc;
 	}
 
@@ -243,7 +238,6 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 	sr_change_iter_t *it = NULL;
 	sr_xpath_ctx_t xp_ctx = {0};
 	char xpath[XPATH_MAX_LEN] = {0};
-	char err_msg[MSG_MAX_LEN] = {0};
 	char ifname_bak[IF_NAME_MAX_LEN] = {0};
 	struct item_cfg *conf = &sitem_conf;
 
@@ -253,12 +247,8 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 
 	rc = sr_get_changes_iter(session, xpath, &it);
 	if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN,
-			 "Get changes from %s failed", xpath);
-		sr_set_error(session, err_msg, xpath);
-
-		printf("ERROR: %s sr_get_changes_iter: %s\n", __func__,
-		       sr_strerror(rc));
+		sr_session_set_error_message(session, "Get changes from %s failed", xpath);
+		printf("ERROR: %s sr_get_changes_iter: %s\n", __func__, sr_strerror(rc));
 		goto cleanup;
 	}
 
@@ -292,6 +282,7 @@ cleanup:
 	if (rc == SR_ERR_NOT_FOUND)
 		rc = SR_ERR_OK;
 
+    sr_free_change_iter(it);
 	return rc;
 }
 
@@ -321,32 +312,19 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 	return rc;
 }
 
-int mac_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-	sr_notif_event_t event, void *private_ctx)
+int mac_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                          const char *module_name, const char *path,
+                          sr_event_t event, uint32_t request_id,
+                          void *private_ctx)
 {
 	int rc = SR_ERR_OK;
-	char xpath[XPATH_MAX_LEN] = {0};
 
-	snprintf(xpath, XPATH_MAX_LEN, "%s", path);
+	if (event != SR_EV_DONE)
+		return rc;
 
-	switch (event) {
-	case SR_EV_VERIFY:
-		rc = parse_config(session, xpath);
-		if (rc == SR_ERR_OK)
-			rc = set_config(session, false);
-		break;
-	case SR_EV_ENABLED:
-		rc = parse_config(session, xpath);
-		if (rc == SR_ERR_OK)
-			rc = set_config(session, false);
-		break;
-	case SR_EV_APPLY:
-		break;
-	case SR_EV_ABORT:
-		rc = set_config(session, true);
-		break;
-	default:
-		break;
+	rc = parse_config(session, path);
+	if (rc == SR_ERR_OK) {
+		rc = set_config(session, false);
 	}
 
 	return rc;

@@ -138,7 +138,6 @@ void add_stream2list(struct std_cb_stream_list *list,
 int parse_vlan_tag(sr_session_ctx_t *session, sr_val_t *value, uint8_t *vlan)
 {
 	int rc = SR_ERR_OK;
-	char err_msg[MSG_MAX_LEN] = {0};
 	char *vlan_str = value->data.enum_val;
 
 	if (!strcmp(vlan_str, "tagged")) {
@@ -148,11 +147,8 @@ int parse_vlan_tag(sr_session_ctx_t *session, sr_val_t *value, uint8_t *vlan)
 	} else if (!strcmp(vlan_str, "all")) {
 		*vlan = 3;
 	} else {
-		snprintf(err_msg, MSG_MAX_LEN, "Invalid '%s'", vlan_str);
-		sr_set_error(session, err_msg, value->xpath);
-
-		printf("ERROR: Invalid '%s' in %s!\n", vlan_str,
-		       value->xpath);
+		sr_session_set_error_message(session, "Invalid '%s'", vlan_str);
+		printf("ERROR: Invalid '%s' in %s!\n", vlan_str, value->xpath);
 		rc = SR_ERR_INVAL_ARG;
 	}
 	return rc;
@@ -337,7 +333,7 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 		rc = parse_mac_address(value->data.string_val, &u64_val,
 				       err_msg, value->xpath);
 		if (rc != SR_ERR_OK) {
-			sr_set_error(session, err_msg, value->xpath);
+			sr_session_set_error_message(session, err_msg);
 			printf("%s\n", err_msg);
 			goto out;
 		}
@@ -358,7 +354,7 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 		rc = parse_mac_address(value->data.string_val, &u64_val,
 				       err_msg, value->xpath);
 		if (rc != SR_ERR_OK) {
-			sr_set_error(session, err_msg, value->xpath);
+			sr_session_set_error_message(session, err_msg);
 			printf("%s\n", err_msg);
 			goto out;
 		}
@@ -457,14 +453,11 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 {
 	int rc = SR_ERR_OK;
 	sr_change_iter_t *it;
-	sr_xpath_ctx_t xp_ctx_cp = {0};
 	sr_xpath_ctx_t xp_ctx_id = {0};
 	sr_change_oper_t oper;
 	sr_val_t *old_value;
 	sr_val_t *new_value;
 	sr_val_t *value;
-	char err_msg[MSG_MAX_LEN] = {0};
-	char *cpname;
 	char *index;
 	uint32_t stream_id = 0;
 	struct std_cb_stream_list *cur_node = NULL;
@@ -473,12 +466,8 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 	rc = sr_get_changes_iter(session, path, &it);
 
 	if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN,
-			 "Get changes from %s failed", path);
-		sr_set_error(session, err_msg, path);
-
-		printf("ERROR: %s sr_get_changes_iter: %s", __func__,
-		       sr_strerror(rc));
+		sr_session_set_error_message(session, "Get changes from %s failed", path);
+		printf("ERROR: %s sr_get_changes_iter: %s", __func__, sr_strerror(rc));
 		goto out;
 	}
 
@@ -502,11 +491,9 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!stream_head) {
 			stream_head = new_stream_list_node(stream_id);
 			if (!stream_head) {
-				snprintf(err_msg, MSG_MAX_LEN, "%s in %s\n",
-					 "Create new node failed",
-					 value->xpath);
-				sr_set_error(session, err_msg, path);
-				rc = SR_ERR_NOMEM;
+				sr_session_set_error_message(session, "%s in %s\n",
+						"Create new node failed", value->xpath);
+				rc = SR_ERR_NO_MEMORY;
 				goto out;
 			}
 			continue;
@@ -515,21 +502,23 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!cur_node) {
 			cur_node = new_stream_list_node(stream_id);
 			if (!cur_node) {
-				snprintf(err_msg, MSG_MAX_LEN, "%s in %s\n",
-					 "Create new node failed",
-					 value->xpath);
-				sr_set_error(session, err_msg, path);
-				rc = SR_ERR_NOMEM;
+				sr_session_set_error_message(session, "%s in %s\n",
+						"Create new node failed", value->xpath);
+				rc = SR_ERR_NO_MEMORY;
 				goto out;
 			}
 
 			add_stream2list(stream_head, cur_node);
 		}
+
+		sr_free_val(old_value);
+		sr_free_val(new_value);
 	}
 	if (rc == SR_ERR_NOT_FOUND)
 		rc = SR_ERR_OK;
 
 out:
+    sr_free_change_iter(it);
 	return rc;
 }
 
@@ -541,13 +530,10 @@ int abort_streamid_config(sr_session_ctx_t *session, char *path,
 	sr_val_t *old_value;
 	sr_val_t *new_value;
 	sr_change_iter_t *it;
-	char err_msg[MSG_MAX_LEN] = {0};
 
 	rc = sr_get_changes_iter(session, path, &it);
 	if (rc != SR_ERR_OK) {
-		snprintf(err_msg, MSG_MAX_LEN, "Get changes from %s failed",
-			 path);
-		sr_set_error(session, err_msg, path);
+		sr_session_set_error_message(session, "Get changes from %s failed", path);
 		printf("ERROR: Get changes from %s failed\n", path);
 		goto out;
 	}
@@ -563,12 +549,16 @@ int abort_streamid_config(sr_session_ctx_t *session, char *path,
 			continue;
 		}
 		parse_cb_streamid(session, new_value, node->stream_ptr);
+
+		sr_free_val(old_value);
+		sr_free_val(new_value);
 	}
 
 	if (rc == SR_ERR_NOT_FOUND)
 		rc = SR_ERR_OK;
 
 out:
+    sr_free_change_iter(it);
 	return rc;
 }
 
@@ -578,7 +568,6 @@ int parse_streamid_per_port_per_id(sr_session_ctx_t *session, bool abort)
 	sr_val_t *values;
 	size_t count;
 	size_t i;
-	char err_msg[MSG_MAX_LEN] = {0};
 	struct std_cb_stream_list *cur_node = stream_head;
 	struct tc_qci_stream_para *para = &sqci_stream_para;
 	char xpath[XPATH_MAX_LEN] = {0,};
@@ -596,7 +585,7 @@ int parse_streamid_per_port_per_id(sr_session_ctx_t *session, bool abort)
 			continue;
 		}
 
-		rc = sr_get_items(session, xpath, &values, &count);
+		rc = sr_get_items(session, xpath, 0, 0, &values, &count);
 		if (rc == SR_ERR_NOT_FOUND) {
 			rc = SR_ERR_OK;
 			/*
@@ -617,11 +606,8 @@ int parse_streamid_per_port_per_id(sr_session_ctx_t *session, bool abort)
 			}
 			cur_node = cur_node->next;
 		} else if (rc != SR_ERR_OK) {
-			snprintf(err_msg, MSG_MAX_LEN,
-				 "Get items from %s failed", xpath);
-			sr_set_error(session, err_msg, xpath);
-			printf("ERROR: %s sr_get_items: %s\n", __func__,
-			       sr_strerror(rc));
+			sr_session_set_error_message(session, "Get items from %s failed", xpath);
+			printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
 
 			goto out;
 		} else {
@@ -653,9 +639,7 @@ out:
 int config_streamid(sr_session_ctx_t *session)
 {
 	int rc = SR_ERR_OK;
-	char err_msg[MSG_MAX_LEN] = {0};
 	struct std_cb_stream_list *cur_node = stream_head;
-	char xpath[XPATH_MAX_LEN] = {0,};
 
 	if (!stc_cfg_flag)
 		init_tsn_socket();
@@ -666,14 +650,8 @@ int config_streamid(sr_session_ctx_t *session)
 					 cur_node->stream_ptr->enable,
 					 &(cur_node->stream_ptr->cbconf));
 		if (rc < 0) {
-			sprintf(err_msg,
-				"failed to set stream-id, %s!",
-				strerror(-rc));
-			snprintf(xpath, XPATH_MAX_LEN,
-				 "%s[index='%u']//*",
-				 CB_STREAMID_XPATH,
-				 cur_node->stream_ptr->index);
-			sr_set_error(session, err_msg, xpath);
+			sr_session_set_error_message(session, "failed to set stream-id, %s!",
+					strerror(-rc));
 			cur_node->apply_st = APPLY_SET_ERR;
 			goto cleanup;
 		} else {
@@ -734,6 +712,7 @@ int cb_streamid_del_tc_config(char *buf, int len)
 	char sub_buf[SUB_CMD_LEN];
 	char *host_name = NULL;
 	char *chain_id = "";
+	int sysret = 0;
 
 	host_name = get_host_name();
 	if (host_name && strcasestr(host_name, "LS1028ARDB"))
@@ -745,7 +724,11 @@ int cb_streamid_del_tc_config(char *buf, int len)
 	strncat(buf, sub_buf, len - 1 - strlen(buf));
 
 	printf("cmd:%s\n", buf);
-	system(buf);
+
+	sysret = system(buf);
+	if (!SYSCALL_OK(sysret)) {
+		return -1;
+	}
 
 	para->set_flag = false;
 	stc_qdisc_flag = false;
@@ -773,8 +756,13 @@ int cb_streamid_get_para(char *buf, int len)
 		chain_id = " chain 30000 ";
 
 	if (!stc_qdisc_flag) {
+		int sysret = 0;
 		snprintf(sub_buf, SUB_CMD_LEN, "tc qdisc add dev %s ingress", para->ifname);
-		system(sub_buf);
+		sysret = system(sub_buf);
+		if (!SYSCALL_OK(sysret)) {
+			return 0;
+		}
+
 		stc_qdisc_flag = true;
 	}
 
@@ -850,11 +838,16 @@ int cb_streamid_clear_para(void)
  * Callback for CB-Stream-Identification configuration.
  *
  ************************************************************************/
-int cb_streamid_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-		sr_notif_event_t event, void *private_ctx)
+int cb_streamid_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                                  const char *module_name, const char *path,
+                                  sr_event_t event, uint32_t request_id,
+                                  void *private_ctx)
 {
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0,};
+
+	if (event != SR_EV_DONE)
+		return rc;
 
 	snprintf(xpath, XPATH_MAX_LEN, "%s/*//*", CB_STREAMID_XPATH);
 
@@ -866,26 +859,11 @@ int cb_streamid_subtree_change_cb(sr_session_ctx_t *session, const char *path,
 	stc_cfg_flag = false;
 #endif
 
-	switch (event) {
-	case SR_EV_VERIFY:
-		rc = cb_streamid_config(session, xpath, false);
-		break;
-	case SR_EV_ENABLED:
-		rc = cb_streamid_config(session, xpath, false);
-		break;
-	case SR_EV_APPLY:
-		usleep(100000);
-		free_stream_list(stream_head);
-		stream_head = NULL;
-		break;
-	case SR_EV_ABORT:
-		rc = cb_streamid_config(session, xpath, true);
-		free_stream_list(stream_head);
-		stream_head = NULL;
-		break;
-	default:
-		break;
-	}
+	rc = cb_streamid_config(session, xpath, false);
+
+	usleep(100000);
+	free_stream_list(stream_head);
+	stream_head = NULL;
 
 	return rc;
 }

@@ -250,10 +250,7 @@ int qci_set_xpath(char *xpath)
 
 static int qci_ret_err_msg(char *msg)
 {
-	static char err_msg[MSG_MAX_LEN] = {0};
-
-	snprintf(err_msg, MSG_MAX_LEN, "Warning: %s", msg);
-	sr_set_error(sqci_session, err_msg, sxpath);
+	sr_session_set_error_message(sqci_session, "Warning: %s", msg);
 	return 0;
 }
 

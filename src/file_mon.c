@@ -117,7 +117,7 @@ static int cp_file(const char *src, const char *target)
 
 static int backup_file(const char *src)
 {
-	char target[MAX_FILE_PATH_LEN];
+	char target[MAX_FILE_PATH_LEN + 1];
 	int ret;
 
 	if (!src) {
@@ -125,7 +125,9 @@ static int backup_file(const char *src)
 		return 1;
 	}
 
-	snprintf(target, MAX_FILE_PATH_LEN, "%s.bak", src);
+	strncpy(target, src, MAX_FILE_PATH_LEN);
+	strncat(target, ".bak", 4);
+
 	ret = cp_file(src, target);
 
 	return ret;

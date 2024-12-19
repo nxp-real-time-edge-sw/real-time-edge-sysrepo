@@ -28,7 +28,6 @@
 #define MAX_VLAN_LEN (16)
 #define MAX_PARA_LEN (32)
 #define MAX_ACTION_LEN (128)
-#define MAX_CMD_LEN (512)
 
 #define SUB_ITEM_NONE		(0)
 #define SUB_ITEM_QDISC		(1)
@@ -36,7 +35,9 @@
 
 #define _PARA(a, l, v) snprintf((a), (l), "%s", (v))
 
-int brtc_subtree_change_cb(sr_session_ctx_t *session, const char *path,
-		sr_notif_event_t event, void *private_ctx);
+int brtc_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
+                           const char *module_name, const char *path,
+                           sr_event_t event, uint32_t request_id,
+                           void *private_ctx);
 
 #endif
