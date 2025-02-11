@@ -1,22 +1,22 @@
 <bridges xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge"
-	 xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
-         xmlns:sfsg="urn:ieee:std:802.1Q:yang:ieee802-dot1q-stream-filters-gates"
-	 xmlns:psfp="urn:ieee:std:802.1Q:yang:ieee802-dot1q-psfp"
-	 xmlns:qci-augment="urn:ieee:std:802.1Q:yang:ieee802-dot1q-qci-augment">
-	<bridge>
-		<name>switch</name>
-		<bridge-type>provider-edge-bridge</bridge-type>
-		<address>00-00-00-00-00-02</address>
-		<component>
-		    <name>swp0</name>
-		    <type>edge-relay-component</type>
-		    <psfp:flow-meters>
-			<psfp:flow-meter-instance-table>
-			    <psfp:flow-meter-instance-id>68</psfp:flow-meter-instance-id>
-			    <qci-augment:flow-meter-enabled>false</qci-augment:flow-meter-enabled>
-		    </psfp:flow-meter-instance-table>
-		    <psfp:max-flow-meter-instances>384</psfp:max-flow-meter-instances>
-		    </psfp:flow-meters>
-		</component>
-	</bridge>
+    xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+    xmlns:sfsg="urn:ieee:std:802.1Q:yang:ieee802-dot1q-stream-filters-gates"
+    xmlns:psfp-bridge="urn:ieee:std:802.1Q:yang:ieee802-dot1q-psfp-bridge"
+    xmlns:qci-augment="urn:ieee:std:802.1Q:yang:ieee802-dot1q-qci-augment">
+<bridge>
+    <name>switch</name>
+    <bridge-type>provider-edge-bridge</bridge-type>
+    <address>00-00-00-00-00-02</address>
+    <component>
+        <name>swp0</name>
+        <type>edge-relay-component</type>
+        <psfp-bridge:flow-meters>
+            <psfp-bridge:flow-meter-instance-table nc:operation="replace">
+                <psfp-bridge:flow-meter-instance-id>68</psfp-bridge:flow-meter-instance-id>
+                <qci-augment:flow-meter-enabled>false</qci-augment:flow-meter-enabled>
+            </psfp-bridge:flow-meter-instance-table>
+            <psfp-bridge:max-flow-meter-instances>384</psfp-bridge:max-flow-meter-instances>
+        </psfp-bridge:flow-meters>
+    </component>
+</bridge>
 </bridges>

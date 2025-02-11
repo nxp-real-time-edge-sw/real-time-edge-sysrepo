@@ -1,4 +1,5 @@
-<bridges xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge">
+<bridges xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge"
+    xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
 	<bridge>
 		<name>br1</name>
 		<bridge-type>provider-edge-bridge</bridge-type>
