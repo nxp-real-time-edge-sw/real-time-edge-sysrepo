@@ -1,7 +1,5 @@
 <interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces"
-	    xmlns:sched="urn:ieee:std:802.1Q:yang:ieee802-dot1q-sched"
-	     xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
-	    xmlns:preempt="urn:ieee:std:802.1Q:yang:ieee802-dot1q-preemption">
+	xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
 	<interface>
 		<name>swp3</name>
 		<enabled>true</enabled>

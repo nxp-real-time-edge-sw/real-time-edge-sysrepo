@@ -1,21 +1,24 @@
 <interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces"
-	    xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
-	    xmlns:dot1q="urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge"
-	    xmlns:preempt-bridge="urn:ieee:std:802.1Q:yang:ieee802-dot1q-preemption-bridge">
-	<interface>
-		<name>swp1</name>
-		<enabled>true</enabled>
-		<type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
-		<dot1q:bridge-port>
-			<preempt-bridge:frame-preemption-parameters>
-				<preempt-bridge:frame-preemption-status-table>
-					<preempt-bridge:priority0>preemptable</preempt-bridge:priority0>
-					<preempt-bridge:priority1>express</preempt-bridge:priority1>
-					<preempt-bridge:priority2>preemptable</preempt-bridge:priority2>
-					<preempt-bridge:priority3>express</preempt-bridge:priority3>
-					<preempt-bridge:priority4>preemptable</preempt-bridge:priority4>
-				</preempt-bridge:frame-preemption-status-table>
-			</preempt-bridge:frame-preemption-parameters>
-		</dot1q:bridge-port>
-	</interface>
+    xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+    xmlns:dot1q="urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge"
+    xmlns:sched="urn:ieee:std:802.1Q:yang:ieee802-dot1q-sched"
+    xmlns:sched-bridge="urn:ieee:std:802.1Q:yang:ieee802-dot1q-sched-bridge"
+    xmlns:preempt-bridge="urn:ieee:std:802.1Q:yang:ieee802-dot1q-preemption-bridge">
+<interface>
+    <name>swp1</name>
+    <enabled>true</enabled>
+    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+    <dot1q:bridge-port>
+        <preempt-bridge:frame-preemption-parameters nc:operation="replace">
+            <preempt-bridge:frame-preemption-status-table>
+                <preempt-bridge:priority0>preemptable</preempt-bridge:priority0>
+                <preempt-bridge:priority1>preemptable</preempt-bridge:priority1>
+                <preempt-bridge:priority2>preemptable</preempt-bridge:priority2>
+                <preempt-bridge:priority3>express</preempt-bridge:priority3>
+                <preempt-bridge:priority4>preemptable</preempt-bridge:priority4>
+            </preempt-bridge:frame-preemption-status-table>
+        </preempt-bridge:frame-preemption-parameters>
+    </dot1q:bridge-port>
+</interface>
 </interfaces>
+

@@ -2,10 +2,10 @@
 	    xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
 	    xmlns:ip="urn:ietf:params:xml:ns:yang:ietf-ip">
 	<interface>
-		<name>swp2</name>
+		<name>swp0</name>
 		<enabled>true</enabled>
 		<type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
-		<ip:ipv4>
+		<ip:ipv4 nc:operation="replace">
 			<ip:enabled>true</ip:enabled>
 			<ip:forwarding>false</ip:forwarding>
 			<ip:address>

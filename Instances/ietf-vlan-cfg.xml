@@ -7,7 +7,7 @@
 		    <name>eno0</name>
 		    <type>edge-relay-component</type>
 			<bridge-vlan>
-				<vlan>
+				<vlan nc:operation="replace">
 					<vid>162</vid>
 					<name>swp2</name>
 				</vlan>
