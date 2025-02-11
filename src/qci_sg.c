@@ -70,8 +70,7 @@ void clr_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		sgi->sgconf.admin.control_list_length = 0;
 	} else if (!strcmp(nodename, "gate-state-value")) {
 		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value(value->xpath,
-					   "gate-control-entry",
+		index = sr_xpath_key_value(value->xpath, "gate-control-entry",
 					   "index", &xp_ctx);
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
@@ -80,8 +79,7 @@ void clr_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		(entry + u64_val)->gate_state = false;
 	} else if (!strcmp(nodename, "ipv-value")) {
 		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value(value->xpath,
-					   "gate-control-entry",
+		index = sr_xpath_key_value(value->xpath, "gate-control-entry",
 					   "index", &xp_ctx);
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
@@ -90,8 +88,7 @@ void clr_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		(entry + u64_val)->ipv = -1;
 	} else if (!strcmp(nodename, "time-interval-value")) {
 		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value(value->xpath,
-					   "gate-control-entry",
+		index = sr_xpath_key_value(value->xpath, "gate-control-entry",
 					   "index", &xp_ctx);
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
@@ -100,8 +97,7 @@ void clr_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		(entry + u64_val)->time_interval = 0;
 	} else if (!strcmp(nodename, "interval-octet-max")) {
 		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value(value->xpath,
-					   "gate-control-entry",
+		index = sr_xpath_key_value(value->xpath, "gate-control-entry",
 					   "index", &xp_ctx);
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
@@ -188,7 +184,7 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 			sgi->sgconf.admin.gate_states = false;
 		} else {
 			sr_session_set_error_message(session, "Invalid '%s'", num_str);
-			printf("ERROR: Invalid '%s' in %s!\n", num_str, value->xpath);
+			LOG_ERR("Invalid '%s' in %s!", num_str, value->xpath);
 			rc = SR_ERR_INVAL_ARG;
 			goto out;
 		}
@@ -197,8 +193,7 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		pri2num(value->data.enum_val, &sgi->sgconf.admin.init_ipv);
 	} else if (!strcmp(nodename, "gate-state-value")) {
 		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value(value->xpath,
-					   "gate-control-entry",
+		index = sr_xpath_key_value(value->xpath, "gate-control-entry",
 					   "index", &xp_ctx);
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
@@ -219,8 +214,7 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 			acl[u64_val].state = (entry + u64_val)->gate_state;
 	} else if (!strcmp(nodename, "ipv-spec")) {
 		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value(value->xpath,
-					   "gate-control-entry",
+		index = sr_xpath_key_value(value->xpath, "gate-control-entry",
 					   "index", &xp_ctx);
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
@@ -231,8 +225,7 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 			acl[u64_val].ipv = (entry + u64_val)->ipv;
 	} else if (!strcmp(nodename, "time-interval-value")) {
 		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value(value->xpath,
-					   "gate-control-entry",
+		index = sr_xpath_key_value(value->xpath, "gate-control-entry",
 					   "index", &xp_ctx);
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
@@ -249,8 +242,7 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 			acl[u64_val].interval = value->data.uint32_val;
 	} else if (!strcmp(nodename, "interval-octet-max")) {
 		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value(value->xpath,
-					   "gate-control-entry",
+		index = sr_xpath_key_value(value->xpath, "gate-control-entry",
 					   "index", &xp_ctx);
 		if (index != NULL) {
 			u64_val = strtoul(index, NULL, 0);
@@ -264,7 +256,7 @@ int parse_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		if (!sgi->cycletime.denominator) {
 			sr_session_set_error_message(session, "The value of %s is zero",
 					value->xpath);
-			printf("ERROR: denominator is zero!\n");
+			LOG_ERR("denominator is zero!");
 			rc = SR_ERR_INVAL_ARG;
 			goto out;
 		}
@@ -317,7 +309,7 @@ int get_sg_per_port_per_id(sr_session_ctx_t *session, const char *path)
 
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
-		printf("ERROR: %s sr_get_changes_iter: %s", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_changes_iter: %s", __func__, sr_strerror(rc));
 		goto out;
 	}
 
@@ -338,8 +330,8 @@ int get_sg_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		snprintf(sgid_bak, IF_NAME_MAX_LEN, "%s", sg_id);
 
 		sgid = strtoul(sg_id, NULL, 0);
-		cpname = sr_xpath_key_value(value->xpath, "component",
-					    "name", &xp_ctx_cp);
+		cpname = sr_xpath_key_value(value->xpath, "component", "name",
+                                    &xp_ctx_cp);
 		if (!cpname)
 			continue;
 
@@ -349,7 +341,7 @@ int get_sg_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!sg_list_head) {
 			sg_list_head = new_list_node(QCI_T_SG, cpname, sgid);
 			if (!sg_list_head) {
-				sr_session_set_error_message(session, "%s in %s\n",
+				sr_session_set_error_message(session, "%s in %s",
 						"Create new node failed", value->xpath);
 				rc = SR_ERR_NO_MEMORY;
 				goto out;
@@ -361,7 +353,7 @@ int get_sg_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!cur_node) {
 			cur_node = new_list_node(QCI_T_SG, cpname, sgid);
 			if (!cur_node) {
-				sr_session_set_error_message(session, "%s in %s\n",
+				sr_session_set_error_message(session, "%s in %s",
 						"Create new node failed", value->xpath);
 				rc = SR_ERR_NO_MEMORY;
 				goto out;
@@ -395,7 +387,7 @@ int abort_sg_config(sr_session_ctx_t *session, char *path,
 	rc = sr_get_changes_iter(session, path, &it);
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
-		printf("ERROR: Get changes from %s failed\n", path);
+		LOG_ERR("Get changes from %s failed", path);
 		goto out;
 	}
 
@@ -454,18 +446,16 @@ int parse_sg_per_port_per_id(sr_session_ctx_t *session, bool abort)
 			 * container was deleted.
 			 */
 			if (is_del_oper(session, xpath)) {
-				printf("WARN: %s was deleted, disable %s",
-				       xpath, "this Instance.\n");
+			    LOG_WRN("%s was deleted, disable this Instance.", xpath);
 				cur_node->sg_ptr->enable = false;
 			} else {
-				printf("WARN: %s sr_get_items: %s\n", __func__,
-				       sr_strerror(rc));
+			    LOG_WRN("%s sr_get_items: %s", __func__, sr_strerror(rc));
 				del_list_node(cur_node->pre, QCI_T_SG);
 			}
 			cur_node = cur_node->next;
 		} else if (rc != SR_ERR_OK) {
 			sr_session_set_error_message(session, "Get items from %s failed", xpath);
-			printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
+		    LOG_ERR("%s sr_get_items: %s", __func__, sr_strerror(rc));
 			goto out;
 		} else {
 			for (i = 0; i < count; i++) {
@@ -493,6 +483,26 @@ out:
 	return rc;
 }
 
+void print_sg_config(struct tsn_qci_psfp_sgi_conf *sgi)
+{
+    LOG_DBG("tsn_qci_psfp_sgi_conf: gate_enabled=%d, config_change=%d, \
+            admin.gate_states=%d, admin.control_list_length=%d, \
+            admin.cycle_time=%d, admin.cycle_time_extension=%d, \
+            admin.base_time=%d, admin.init_ipv=%d, \
+            admin.gcl->gate_state=%d, admin.gcl->ipv=%d, \
+            admin.gcl->time_interval=%d, admin.gcl->octet_max=%d, \
+            block_invalid_rx_enable=%d, block_invalid_rx=%d, \
+            block_octets_exceeded_enable=%d, block_octets_exceeded=%d",
+            sgi->gate_enabled, sgi->config_change,
+            sgi->admin.gate_states, sgi->admin.control_list_length,
+            sgi->admin.cycle_time, sgi->admin.cycle_time_extension,
+            sgi->admin.base_time, sgi->admin.init_ipv,
+            sgi->admin.gcl->gate_state, sgi->admin.gcl->ipv,
+            sgi->admin.gcl->time_interval, sgi->admin.gcl->octet_max,
+            sgi->block_invalid_rx_enable, sgi->block_invalid_rx,
+            sgi->block_octets_exceeded_enable, sgi->block_octets_exceeded);
+}
+
 int config_sg(sr_session_ctx_t *session)
 {
 	int rc = SR_ERR_OK;
@@ -512,6 +522,12 @@ int config_sg(sr_session_ctx_t *session)
 			time = cal_cycle_time(&cur_node->sg_ptr->cycletime);
 			sgi->admin.cycle_time = time;
 		}
+
+        LOG_DBG("config_sg: port-name=%s, stream-gate-handle=%d, enable=%d",
+                cur_node->sg_ptr->port, cur_node->sg_ptr->sg_handle,
+                (int)cur_node->sg_ptr->enable);
+        print_sg_config(sgi);
+
 		/* set new stream gates configuration */
 		rc = tsn_qci_psfp_sgi_set(cur_node->sg_ptr->port,
 					  cur_node->sg_ptr->sg_handle,
@@ -670,9 +686,7 @@ int qci_sg_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0,};
 
-	/* configure Qbv only when receiving the event SR_EV_DONE */
-	if (event != SR_EV_DONE)
-		return rc;
+    LOG_DBG("stream-gates: start callback(%d): %s", (int)event, path);
 
 	snprintf(xpath, XPATH_MAX_LEN, "%s%s//*", BRIDGE_COMPONENT_XPATH,
 		 QCISG_XPATH);
@@ -692,5 +706,9 @@ int qci_sg_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 		sg_list_head = NULL;
 	}
 
-	return rc;
+    if (rc) {
+        return SR_ERR_CALLBACK_FAILED;
+    } else {
+        return SR_ERR_OK;
+    }
 }

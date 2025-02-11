@@ -26,10 +26,12 @@
 #include <sys/inotify.h>
 #include <pthread.h>
 #include <errno.h>
+#include <stdarg.h>
 
 #include "common.h"
 
 static pthread_mutex_t tsn_mutex;
+static int output_log_level = LOG_LEVEL_WRN;
 
 void init_tsn_mutex(void)
 {
@@ -340,4 +342,72 @@ char *get_host_name(void)
 	}
 
 	return shost_name;
+}
+
+void log_set_output_level(log_level_t level)
+{
+    output_log_level = level;
+}
+
+void log_output(log_level_t level, const char *format, ...)
+{
+    va_list ap;
+    char *msg = NULL;
+    size_t size = 0;
+    int len = 0;
+    char *flag[] = {"ERR", "WRN", "INF", "DBG"};
+
+    /* Determine the required buffer size */
+    va_start(ap, format);
+    len = vsnprintf(msg, size, format, ap);
+    va_end(ap);
+
+    if (len < 0) {
+        return;
+    }
+
+    size = (size_t)len + 1;
+    msg = malloc(size);
+    if (msg == NULL) {
+        return;
+    }
+
+    va_start(ap, format);
+    len = vsnprintf(msg, size, format, ap);
+    va_end(ap);
+    
+    if (len < 0) {
+        free(msg);
+        return;
+    }
+
+    if (level <= output_log_level) {
+        fprintf(stderr, "[%s] %s\r\n", flag[(int)level], msg);
+    }
+
+    free(msg);
+    return;
+}
+
+void print_node_tree_xml(const struct lyd_node *node)
+{
+    char *str;
+
+    lyd_print_mem(&str, node, LYD_XML, LYD_PRINT_WITHSIBLINGS | LYD_PRINT_WD_IMPL_TAG);
+    LOG_DBG("node name: %s\r\n%s", LYD_NAME(node), str);
+    free(str);
+}
+
+/* get interface name */
+const char *get_ifname(const struct lyd_node *node)
+{
+    while (node && strcmp(LYD_NAME(node), "interface")) {
+        node = lyd_parent(node);
+    }
+
+    if (node) {
+        return lyd_get_value(lyd_child(node));
+    }
+
+    return NULL;
 }

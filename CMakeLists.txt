@@ -1,12 +1,30 @@
 cmake_minimum_required(VERSION 2.8.12)
-project(sysrepo-tsn)
+project(sysrepo-tsn C)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-format-truncation")
 
 # include custom Modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
 
+include(GNUInstallDirs)
+
 include_directories("${PROJECT_SOURCE_DIR}/inc")
+
+# set default build type if not specified by user and normalize it
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
+string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_UPPER)
+
+if("${BUILD_TYPE_UPPER}" STREQUAL "RELEASE")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build Type" FORCE)
+    set(CMAKE_C_FLAGS "-DNDEBUG -O2 ${CMAKE_C_FLAGS}")
+elseif("${BUILD_TYPE_UPPER}" STREQUAL "DEBUG")
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build Type" FORCE)
+    set(CMAKE_C_FLAGS "-g -O0 ${CMAKE_C_FLAGS}")
+endif()
+
+set(YANG_MODULE_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/yang/modules/sysrepo-tsn" CACHE STRING "Directory where to copy the YANG modules to.")
 
 # dependencies - libtsn
 find_package(TSN REQUIRED)
@@ -42,6 +60,16 @@ set(LIBS ${LIBS} ${LIBYANG_LIBRARIES})
 find_package(Threads)
 set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
+find_package(LibSystemd)
+if(LIBSYSTEMD_FOUND)
+    set(RT_HAVE_SYSTEMD 1)
+    include_directories(${LIBSYSTEMD_INCLUDE_DIRS})
+    set(LIBS ${LIBS} ${LIBSYSTEMD_LIBRARIES})
+    message(STATUS "systemd system service unit path: ${SYSTEMD_UNIT_DIR}")
+else()
+    message(WARNING "Disabling sysrepo-plugind systemd support because libsystemd was not found.")
+endif()
+
 set(SOURCES
 		src/main.c
 		src/common.c
@@ -61,24 +89,12 @@ set(SOURCES
 
 find_package(PkgConfig)
 
-# find programs
-find_program(SYSREPOCTL_EXECUTABLE sysrepoctl)
-if (NOT SYSREPOCTL_EXECUTABLE)
-    message(FATAL_ERROR "Unable to find sysrepoctl, set SYSREPOCTL_EXECUTABLE manually.")
-endif()
-
-find_program(SYSREPOCFG_EXECUTABLE sysrepocfg)
-if (NOT SYSREPOCFG_EXECUTABLE)
-    message(FATAL_ERROR "Unable to find sysrepocfg, set SYSREPOCFG_EXECUTABLE manually.")
-endif()
-
-find_program(CHMOD_EXECUTABLE chmod)
-if (NOT CHMOD_EXECUTABLE)
-    message(FATAL_ERROR "Unable to find chmod, set CHMOD_EXECUTABLE manually.")
-endif()
-
 if (CONF_SYSREPO_TSN_TC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSYSREPO_TSN_TC")
+endif()
+
+if(RT_HAVE_SYSTEMD)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DRT_HAVE_SYSTEMD")
 endif()
 
 # Command line options to be passed to `sysrepoctl` when working with modules
@@ -87,10 +103,17 @@ if (NOT SYSREPOCTL_ROOT_PERMS)
     set(SYSREPOCTL_ROOT_PERMS "-o root:root -p 600")
 endif()
 
-install(CODE "
-	set(ENV{SYSREPOCTL} ${SYSREPOCTL_EXECUTABLE})
-	set(ENV{SYSREPOCTL_ROOT_PERMS} SYSREPOCTL_ROOT_PERMS)
-	execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/model-install.sh)")
+configure_file("${PROJECT_SOURCE_DIR}/sysrepo-tsn.service.in" "${PROJECT_BINARY_DIR}/sysrepo-tsn.service" @ONLY)
+
+if(RT_HAVE_SYSTEMD)
+    install(FILES ${PROJECT_BINARY_DIR}/sysrepo-tsn.service DESTINATION ${SYSTEMD_UNIT_DIR})
+endif()
+
+# install YANG modules
+file(GLOB yangs "${PROJECT_SOURCE_DIR}/modules/*.yang")
+install(FILES ${yangs} DESTINATION ${YANG_MODULE_DIR})
+
+install(FILES ${PROJECT_SOURCE_DIR}/scripts/install-tsn-yang.sh DESTINATION /etc/sysrepo-tsn/)
 
 add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
 target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBS})

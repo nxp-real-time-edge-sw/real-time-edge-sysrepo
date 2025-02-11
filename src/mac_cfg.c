@@ -27,6 +27,7 @@ struct item_cfg {
 };
 static struct item_cfg sitem_conf;
 
+#if 0
 static int get_inet_cfg(char *ifname, int req, void *buf, int len)
 {
 	int ret = 0;
@@ -39,7 +40,7 @@ static int get_inet_cfg(char *ifname, int req, void *buf, int len)
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
-		PRINT("create socket failed! ret:%d\n", sockfd);
+		LOG_ERR("create socket failed! ret:%d", sockfd);
 		return -2;
 	}
 
@@ -49,7 +50,7 @@ static int get_inet_cfg(char *ifname, int req, void *buf, int len)
 	ret = ioctl(sockfd, req, &ifr);
 	close(sockfd);
 	if (ret < 0) {
-		PRINT("ioctl error! ret:%d\n", ret);
+		LOG_ERR("ioctl error! ret:%d", ret);
 		return -3;
 	}
 
@@ -67,6 +68,7 @@ int get_inet_mac(char *ifname, uint8_t *buf, int len)
 {
 	return get_inet_cfg(ifname, SIOCGIFHWADDR, buf, len);
 }
+#endif
 
 static int set_inet_cfg(char *ifname, int req, void *buf, int len)
 {
@@ -80,7 +82,7 @@ static int set_inet_cfg(char *ifname, int req, void *buf, int len)
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
-		PRINT("create socket failed! ret:%d\n", sockfd);
+		LOG_ERR("create socket failed! ret:%d", sockfd);
 		return -2;
 	}
 
@@ -90,7 +92,7 @@ static int set_inet_cfg(char *ifname, int req, void *buf, int len)
 	ret = ioctl(sockfd, SIOCGIFFLAGS, &ifr);
 	if (ret < 0) {
 		close(sockfd);
-		PRINT("%s:can not find \"%s\"\n", __func__, ifname);
+		LOG_ERR("%s: can not find \"%s\"", __func__, ifname);
 		return -3;
 	}
 
@@ -106,7 +108,7 @@ static int set_inet_cfg(char *ifname, int req, void *buf, int len)
 	ret = ioctl(sockfd, req, &ifr);
 	close(sockfd);
 	if (ret < 0) {
-		PRINT("%s ioctl error! ret:%d\n", __func__, ret);
+		LOG_ERR("%s ioctl error! ret:%d", __func__, ret);
 		return -4;
 	}
 
@@ -199,17 +201,15 @@ static int parse_item(sr_session_ctx_t *session, char *path,
 		 * container was deleted.
 		 */
 		if (is_del_oper(session, path)) {
-			printf("WARN: %s was deleted, disable %s",
-			       path, "this Instance.\n");
+			LOG_WRN("%s was deleted, disable this Instance.", path);
 			goto cleanup;
 		} else {
-			printf("WARN: %s sr_get_items: %s\n", __func__,
-			       sr_strerror(rc));
+			LOG_WRN("%s sr_get_items: %s", __func__, sr_strerror(rc));
 			return SR_ERR_OK;
 		}
 	} else if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get items from %s failed", path);
-		printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_items: %s", __func__, sr_strerror(rc));
 		return rc;
 	}
 
@@ -248,7 +248,7 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 	rc = sr_get_changes_iter(session, xpath, &it);
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", xpath);
-		printf("ERROR: %s sr_get_changes_iter: %s\n", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_changes_iter: %s", __func__, sr_strerror(rc));
 		goto cleanup;
 	}
 
@@ -259,8 +259,7 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 		if (!value)
 			continue;
 
-		ifname = sr_xpath_key_value(value->xpath, "bridge",
-					    "name", &xp_ctx);
+		ifname = sr_xpath_key_value(value->xpath, "bridge", "name", &xp_ctx);
 
 		sr_free_val(old_value);
 		sr_free_val(new_value);
@@ -307,7 +306,7 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 	if (ret != 0)
 		return SR_ERR_INVAL_ARG;
 
-	PRINT("set_inet_mac ifname:%s mac:%s\n", conf->ifname, conf->mac_addr);
+	LOG_DBG("set_inet_mac: ifname=%s mac=%s", conf->ifname, conf->mac_addr);
 
 	return rc;
 }
@@ -319,13 +318,16 @@ int mac_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 {
 	int rc = SR_ERR_OK;
 
-	if (event != SR_EV_DONE)
-		return rc;
+    LOG_DBG("bridge/address: start callback(%d): %s", (int)event, path);
 
 	rc = parse_config(session, path);
 	if (rc == SR_ERR_OK) {
 		rc = set_config(session, false);
 	}
 
-	return rc;
+    if (rc) {
+        return SR_ERR_CALLBACK_FAILED;
+    } else {
+        return SR_ERR_OK;
+    }
 }

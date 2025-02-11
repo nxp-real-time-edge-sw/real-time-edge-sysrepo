@@ -58,6 +58,8 @@
 #include <linux/if_vlan.h>
 #include <linux/sockios.h>
 
+#include "log.h"
+
 #define PRINT printf
 
 #define MAX_CMD_LEN		(512)
@@ -111,5 +113,8 @@ int str_to_num(int type, char *str, uint64_t *num);
 void pri2num(char *pri_str, int8_t *pri_num);
 bool is_del_oper(sr_session_ctx_t *session, char *path);
 char *get_host_name(void);
+
+void print_node_tree_xml(const struct lyd_node *node);
+const char *get_ifname(const struct lyd_node *node);
 
 #endif

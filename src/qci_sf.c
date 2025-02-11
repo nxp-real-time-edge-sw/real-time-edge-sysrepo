@@ -45,8 +45,7 @@ void clr_qci_sf(sr_session_ctx_t *session, sr_val_t *value,
 	if (!nodename)
 		return;
 
-	if (!strcmp(nodename,
-		    "ieee802-dot1q-qci-augment:stream-filter-enabled")) {
+	if (!strcmp(nodename, "ieee802-dot1q-qci-augment:stream-filter-enabled")) {
 		sfi->enable = false;
 	} else if (!strcmp(nodename, "stream-filter-instance-id")) {
 		sfi->sf_id = 0;
@@ -60,8 +59,7 @@ void clr_qci_sf(sr_session_ctx_t *session, sr_val_t *value,
 		sfi->sfconf.stream_gate_instance_id = 0;
 	} else if (!strcmp(nodename, "max-sdu-size")) {
 		sfi->sfconf.stream_filter.maximum_sdu_size = 0;
-	} else if (!strcmp(nodename,
-			   "stream-blocked-due-to-oversize-frame-enabled")) {
+	} else if (!strcmp(nodename, "stream-blocked-due-to-oversize-frame-enabled")) {
 		sfi->sfconf.block_oversize_enable = 0;
 	} else if (!strcmp(nodename, "ieee802-dot1q-psfp:flow-meter-instance-id")) {
 		sfi->sfconf.stream_filter.flow_meter_instance_id = -1;
@@ -81,8 +79,7 @@ int parse_qci_sf(sr_session_ctx_t *session, sr_val_t *value,
 	if (!nodename)
 		goto out;
 
-	if (!strcmp(nodename,
-		    "ieee802-dot1q-qci-augment:stream-filter-enabled")) {
+	if (!strcmp(nodename, "ieee802-dot1q-qci-augment:stream-filter-enabled")) {
 		sfi->enable = value->data.bool_val;
 	} else if (!strcmp(nodename, "stream-filter-instance-id")) {
 		sfi->sf_id = value->data.uint32_val;
@@ -98,8 +95,7 @@ int parse_qci_sf(sr_session_ctx_t *session, sr_val_t *value,
 		/* Only use parameters in the first list */
 		u32_val = value->data.uint32_val;
 		sfi->sfconf.stream_filter.maximum_sdu_size = u32_val;
-	} else if (!strcmp(nodename,
-			   "stream-blocked-due-to-oversize-frame-enabled")) {
+	} else if (!strcmp(nodename, "stream-blocked-due-to-oversize-frame-enabled")) {
 		/* Only use parameters in the first list */
 		sfi->sfconf.block_oversize_enable = value->data.bool_val;
 	} else if (!strcmp(nodename, "ieee802-dot1q-psfp:flow-meter-instance-id")) {
@@ -131,7 +127,7 @@ int get_sf_per_port_per_id(sr_session_ctx_t *session, const char *path)
 
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
-		printf("ERROR: %s sr_get_changes_iter: %s", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_changes_iter: %s\n", __func__, sr_strerror(rc));
 		goto out;
 	}
 
@@ -152,8 +148,7 @@ int get_sf_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		snprintf(sfid_bak, IF_NAME_MAX_LEN, "%s", sf_id);
 
 		sfid = strtoul(sf_id, NULL, 0);
-		cpname = sr_xpath_key_value(value->xpath, "component",
-					    "name", &xp_ctx_cp);
+		cpname = sr_xpath_key_value(value->xpath, "component", "name", &xp_ctx_cp);
 		if (!cpname)
 			continue;
 
@@ -204,7 +199,7 @@ int abort_sf_config(sr_session_ctx_t *session, char *path,
 	rc = sr_get_changes_iter(session, path, &it);
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
-		printf("ERROR: Get changes from %s failed\n", path);
+		LOG_ERR("Get changes from %s failed\n", path);
 		goto out;
 	}
 
@@ -263,20 +258,18 @@ int parse_sf_per_port_per_id(sr_session_ctx_t *session, bool abort)
 			 * container was deleted.
 			 */
 			if (is_del_oper(session, xpath)) {
-				printf("WARN: %s was deleted, disable %s",
-				       xpath, "this Instance.\n");
+			    LOG_WRN("%s was deleted, disable this Instance.", xpath);
 				cur_node->sf_ptr->enable = false;
 				rc = SR_ERR_OK;
 			} else {
-				printf("ERROR: %s sr_get_items: %s\n", __func__,
-				       sr_strerror(rc));
+			    LOG_WRN("%s sr_get_items: %s", __func__, sr_strerror(rc));
 				del_list_node(cur_node->pre, QCI_T_SF);
 			}
 			cur_node = cur_node->next;
 		} else if (rc != SR_ERR_OK) {
-				sr_session_set_error_message(session, "Get items from %s failed", xpath);
-				printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
-				goto out;
+			sr_session_set_error_message(session, "Get items from %s failed", xpath);
+		    LOG_ERR("%s sr_get_items: %s", __func__, sr_strerror(rc));
+			goto out;
 		} else {
 			for (i = 0; i < count; i++) {
 				if (values[i].type == SR_LIST_T ||
@@ -303,6 +296,21 @@ out:
 	return rc;
 }
 
+static void print_sf_config(struct tsn_qci_psfp_sfi_conf *sfi)
+{
+    LOG_DBG("tsn_qci_psfp_sfi_conf: stream_handle_spec=%d, \
+            priority_spec=%d, stream_gate_instance_id=%d, \
+            stream_filter.maximum_sdu_size=%d, \
+            stream_filter.flow_meter_instance_id=%d, \
+            block_oversize_enable=%d, block_oversize=%d",
+            sfi->stream_handle_spec, sfi->priority_spec,
+            sfi->stream_gate_instance_id,
+            sfi->stream_filter.maximum_sdu_size,
+            sfi->stream_filter.flow_meter_instance_id,
+            sfi->block_oversize_enable,
+            sfi->block_oversize);
+}
+
 int config_sf(sr_session_ctx_t *session)
 {
 	int rc = SR_ERR_OK;
@@ -311,6 +319,11 @@ int config_sf(sr_session_ctx_t *session)
 	if (!stc_cfg_flag)
 		init_tsn_socket();
 	while (cur_node) {
+        LOG_DBG("config_sf: port-name=%s, stream-filter-handle=%d, enable=%d",
+                cur_node->sf_ptr->port, cur_node->sf_ptr->sf_id,
+			    (int)cur_node->sf_ptr->enable);
+        print_sf_config(&(cur_node->sf_ptr->sfconf));
+
 		/* set new stream filters configuration */
 		rc = tsn_qci_psfp_sfi_set(cur_node->sf_ptr->port,
 					  cur_node->sf_ptr->sf_id,
@@ -367,9 +380,7 @@ int qci_sf_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0,};
 
-	/* configure Qbv only when receiving the event SR_EV_DONE */
-	if (event != SR_EV_DONE)
-		return rc;
+    LOG_DBG("stream-filters: start callback(%d): %s", (int)event, path);
 
 #ifdef SYSREPO_TSN_TC
 	stc_cfg_flag = true;
@@ -387,5 +398,9 @@ int qci_sf_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 		sf_list_head = NULL;
 	}
 
-	return rc;
+    if (rc) {
+        return SR_ERR_CALLBACK_FAILED;
+    } else {
+        return SR_ERR_OK;
+    }
 }

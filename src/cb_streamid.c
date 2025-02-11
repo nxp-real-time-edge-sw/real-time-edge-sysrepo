@@ -148,7 +148,7 @@ int parse_vlan_tag(sr_session_ctx_t *session, sr_val_t *value, uint8_t *vlan)
 		*vlan = 3;
 	} else {
 		sr_session_set_error_message(session, "Invalid '%s'", vlan_str);
-		printf("ERROR: Invalid '%s' in %s!\n", vlan_str, value->xpath);
+		LOG_ERR("Invalid '%s' in %s!", vlan_str, value->xpath);
 		rc = SR_ERR_INVAL_ARG;
 	}
 	return rc;
@@ -165,8 +165,7 @@ int parse_mac_address(char *mac_str, uint64_t *mac,
 
 	if (strlen(mac_str) != 17) {
 		rc = SR_ERR_INVAL_ARG;
-		sprintf(err_msg, "length of '%s' in path '%s'should be 17!",
-			mac_str, path);
+		sprintf(err_msg, "length of '%s' in path '%s'should be 17!", mac_str, path);
 		goto out;
 	}
 	temp = strtok(mac_str, "-");
@@ -181,9 +180,7 @@ int parse_mac_address(char *mac_str, uint64_t *mac,
 		if (temp != NULL) {
 			if (strlen(temp) != 2) {
 				rc = SR_ERR_INVAL_ARG;
-				sprintf(err_msg,
-					"'%s' in '%s' is in wrong format!",
-					mac_str, path);
+				sprintf(err_msg, "'%s' in '%s' is in wrong format!", mac_str, path);
 				goto out;
 			}
 			ul = strtoul(temp, NULL, 16);
@@ -194,8 +191,7 @@ int parse_mac_address(char *mac_str, uint64_t *mac,
 	}
 	if (i != 6) {
 		rc = SR_ERR_INVAL_ARG;
-		sprintf(err_msg, "'%s' in '%s' is in wrong format!",
-			mac_str, path);
+		sprintf(err_msg, "'%s' in '%s' is in wrong format!", mac_str, path);
 		goto out;
 	}
 	for (i = 0, ul = 0; i < 6; i++)
@@ -334,7 +330,7 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 				       err_msg, value->xpath);
 		if (rc != SR_ERR_OK) {
 			sr_session_set_error_message(session, err_msg);
-			printf("%s\n", err_msg);
+			LOG_ERR("%s", err_msg);
 			goto out;
 		}
 
@@ -355,7 +351,7 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 				       err_msg, value->xpath);
 		if (rc != SR_ERR_OK) {
 			sr_session_set_error_message(session, err_msg);
-			printf("%s\n", err_msg);
+			LOG_ERR("%s", err_msg);
 			goto out;
 		}
 		stream->cbconf.para.sid.smac = u64_val;
@@ -467,7 +463,7 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
-		printf("ERROR: %s sr_get_changes_iter: %s", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_changes_iter: %s", __func__, sr_strerror(rc));
 		goto out;
 	}
 
@@ -477,9 +473,8 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!value)
 			continue;
 
-		index = sr_xpath_key_value(value->xpath,
-					    "stream-identity", "index",
-					    &xp_ctx_id);
+		index = sr_xpath_key_value(value->xpath, "stream-identity", "index",
+					                &xp_ctx_id);
 
 		if ((!index) || !strncmp(index, index_bak, IF_NAME_MAX_LEN))
 			continue;
@@ -491,8 +486,8 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!stream_head) {
 			stream_head = new_stream_list_node(stream_id);
 			if (!stream_head) {
-				sr_session_set_error_message(session, "%s in %s\n",
-						"Create new node failed", value->xpath);
+				sr_session_set_error_message(session, "Create new node failed in %s",
+						                        value->xpath);
 				rc = SR_ERR_NO_MEMORY;
 				goto out;
 			}
@@ -502,8 +497,8 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!cur_node) {
 			cur_node = new_stream_list_node(stream_id);
 			if (!cur_node) {
-				sr_session_set_error_message(session, "%s in %s\n",
-						"Create new node failed", value->xpath);
+				sr_session_set_error_message(session, "Create new node failed in %s",
+						                         value->xpath);
 				rc = SR_ERR_NO_MEMORY;
 				goto out;
 			}
@@ -534,7 +529,7 @@ int abort_streamid_config(sr_session_ctx_t *session, char *path,
 	rc = sr_get_changes_iter(session, path, &it);
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
-		printf("ERROR: Get changes from %s failed\n", path);
+		LOG_ERR("Get changes from %s failed\n", path);
 		goto out;
 	}
 
@@ -573,8 +568,7 @@ int parse_streamid_per_port_per_id(sr_session_ctx_t *session, bool abort)
 	char xpath[XPATH_MAX_LEN] = {0,};
 
 	while (cur_node) {
-		snprintf(xpath, XPATH_MAX_LEN,
-			 "%s[index='%u']//*",
+		snprintf(xpath, XPATH_MAX_LEN, "%s[index='%u']//*",
 			 CB_STREAMID_XPATH, cur_node->stream_ptr->index);
 		if (abort) {
 			rc = abort_streamid_config(session, xpath, cur_node);
@@ -593,22 +587,19 @@ int parse_streamid_per_port_per_id(sr_session_ctx_t *session, bool abort)
 			 * container was deleted.
 			 */
 			if (is_del_oper(session, xpath)) {
-				printf("WARN: %s was deleted, disable %s",
-				       xpath, "this Instance.\n");
+			    LOG_WRN("%s was deleted, disable this Instance.", xpath);
 				cur_node->stream_ptr->enable = false;
 				para->enable = false;
 				para->set_flag = true;
 				rc = SR_ERR_OK;
 			} else {
-				printf("ERROR: %s sr_get_items: %s\n", __func__,
-				       sr_strerror(rc));
+			    LOG_WRN("%s sr_get_items: %s", __func__, sr_strerror(rc));
 				del_stream_list_node(cur_node);
 			}
 			cur_node = cur_node->next;
 		} else if (rc != SR_ERR_OK) {
 			sr_session_set_error_message(session, "Get items from %s failed", xpath);
-			printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
-
+		    LOG_ERR("%s sr_get_items: %s", __func__, sr_strerror(rc));
 			goto out;
 		} else {
 			for (i = 0; i < count; i++) {
@@ -636,6 +627,14 @@ out:
 	return rc;
 }
 
+void print_streamid_config(struct tsn_cb_streamid *sid)
+{
+    LOG_DBG("tsn_cb_streamid: handle=%d, ifac_oport=%d, ofac_oport=%d, \
+            ifac_iport=%d, ofac_iport=%d, type=%d",
+            sid->handle, sid->ifac_oport, sid->ofac_oport,
+            sid->ifac_iport, sid->ofac_iport, sid->type);
+}
+
 int config_streamid(sr_session_ctx_t *session)
 {
 	int rc = SR_ERR_OK;
@@ -644,6 +643,12 @@ int config_streamid(sr_session_ctx_t *session)
 	if (!stc_cfg_flag)
 		init_tsn_socket();
 	while (cur_node) {
+        LOG_DBG("config_streamid: port-name=%s, stream-id-handle=%d, enable=%d", 
+                cur_node->stream_ptr->port,
+				cur_node->stream_ptr->index,
+				(int)cur_node->stream_ptr->enable);
+        print_streamid_config(&(cur_node->stream_ptr->cbconf));
+
 		/* set new flow meter configuration */
 		rc = tsn_cb_streamid_set(cur_node->stream_ptr->port,
 					 cur_node->stream_ptr->index,
@@ -723,7 +728,7 @@ int cb_streamid_del_tc_config(char *buf, int len)
 	snprintf(sub_buf, SUB_CMD_LEN, "tc qdisc del dev %s ingress;", para->ifname);
 	strncat(buf, sub_buf, len - 1 - strlen(buf));
 
-	printf("cmd:%s\n", buf);
+	LOG_DBG("Command: %s\n", buf);
 
 	sysret = system(buf);
 	if (!SYSCALL_OK(sysret)) {
@@ -771,8 +776,6 @@ int cb_streamid_get_para(char *buf, int len)
 
 	snprintf(sub_buf, SUB_CMD_LEN, "tc filter add dev %s %s ", para->ifname, chain_id);
 	strncat(buf, sub_buf, len - 1 - strlen(buf));
-
-
 
 	snprintf(sub_buf, SUB_CMD_LEN, "protocol 802.1Q parent ffff: flower skip_sw ");
 	strncat(buf, sub_buf, len - 1 - strlen(buf));
@@ -846,8 +849,7 @@ int cb_streamid_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0,};
 
-	if (event != SR_EV_DONE)
-		return rc;
+    LOG_DBG("stream-identity: start callback(%d): %s", (int)event, path);
 
 	snprintf(xpath, XPATH_MAX_LEN, "%s/*//*", CB_STREAMID_XPATH);
 
@@ -865,5 +867,9 @@ int cb_streamid_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	free_stream_list(stream_head);
 	stream_head = NULL;
 
-	return rc;
+    if (rc) {
+        return SR_ERR_CALLBACK_FAILED;
+    } else {
+        return SR_ERR_OK;
+    }
 }

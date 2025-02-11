@@ -80,7 +80,7 @@ static int tsn_config_del_qbv_by_tc(struct sr_qbv_conf *qbvconf, char *ifname)
 
 	snprintf(cmd_buff, MAX_CMD_LEN, cmd, ifname, TC_QDISC_DEFAULT_HANDLE);
 
-	printf("cmd: %s\n", cmd_buff);
+	LOG_DBG("Command: %s", cmd_buff);
 
 	sysret = system(cmd_buff);
 	if (!SYSCALL_OK(sysret)) {
@@ -97,7 +97,6 @@ static int tsn_config_qbv_by_tc(sr_session_ctx_t *session, char *ifname,
 	int count = 1;
 	int offset = 0;
 	pid_t sysret = 0;
-	int rc = SR_ERR_OK;
 	uint32_t gate_mask = 0;
 	char *host_name = NULL;
 	uint32_t interval = 0;
@@ -178,15 +177,13 @@ static int tsn_config_qbv_by_tc(sr_session_ctx_t *session, char *ifname,
 	snprintf(stc_subcmd, MAX_SUBCMD_LEN, "flags 2");
 	strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 
+	LOG_DBG("Command: %s", stc_cmd);
 	sysret = system(stc_cmd);
-	if (SYSCALL_OK(sysret)) {
-		printf("ok. cmd:%s\n", stc_cmd);
-	} else {
-		printf("failed! ret:0x%X cmd:%s\n", sysret, stc_cmd);
-		rc = SR_ERR_INVAL_ARG;
+	if (!SYSCALL_OK(sysret)) {
+	    return SR_ERR_INVAL_ARG;
 	}
 
-	return rc;
+	return SR_ERR_OK;
 }
 
 int tsn_config_qbv(sr_session_ctx_t *session, char *ifname,
@@ -219,7 +216,7 @@ int tsn_config_qbv(sr_session_ctx_t *session, char *ifname,
 	if (rc != 0) {
 		sr_session_set_error_message(session, "Set Qbv error: %s",
 				strerror(-rc));
-		printf("ERROR: set qbv error, %s!\n", strerror(-rc));
+		LOG_ERR("set qbv error, %s!", strerror(-rc));
 		rc = errno2sp(-rc);
 		goto out;
 	}
@@ -353,7 +350,7 @@ int parse_qbv(sr_session_ctx_t *session, sr_val_t *value,
 		if (!qbvconf->cycletime.denominator) {
 			sr_session_set_error_message(session, "The value of %s is zero",
 					value->xpath);
-			printf("ERROR: denominator is zero!\n");
+			LOG_ERR("denominator is zero!");
 			valid = -1;
 			goto out;
 		}
@@ -396,7 +393,7 @@ int abort_qbv_config(sr_session_ctx_t *session, char *path,
 	rc = sr_get_changes_iter(session, path, &it);
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
-		printf("ERROR: Get changes from %s failed\n", path);
+		LOG_ERR("Get changes from %s failed", path);
 		goto out;
 	}
 	while (SR_ERR_OK == (rc = sr_get_change_next(session, it, &oper,
@@ -445,19 +442,17 @@ int config_qbv_per_port(sr_session_ctx_t *session, char *path, bool abort,
 		 * container was deleted.
 		 */
 		if (is_del_oper(session, path)) {
-			printf("WARN: %s was deleted, disable %s",
-			       path, "this Instance.\n");
+			LOG_WRN("%s was deleted, disable this Instance.", path);
 			qbvconf.qbv_en = false;
 			goto config_qbv;
 		} else {
-			printf("WARN: %s sr_get_items: %s\n", __func__,
-			       sr_strerror(rc));
+			LOG_WRN("%s sr_get_items: %s", __func__, sr_strerror(rc));
 			free_qbv_memory(qbvconf.qbvconf_ptr);
 			return SR_ERR_OK;
 		}
 	} else if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get items from %s failed", path);
-		printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_items: %s", __func__, sr_strerror(rc));
 		free_qbv_memory(qbvconf.qbvconf_ptr);
 		return rc;
 	}
@@ -504,28 +499,26 @@ int qbv_config(sr_session_ctx_t *session, const char *path, bool abort)
 	char ifname_bak[IF_NAME_MAX_LEN] = {0,};
 	char xpath[XPATH_MAX_LEN] = {0,};
 
-	/* snprintf(xpath, XPATH_MAX_LEN, "%s%s/%s:*//*", IF_XPATH, BR_PORT, QBV_MODULE); */
+	snprintf(xpath, XPATH_MAX_LEN, "%s%s/%s:*//*", IF_XPATH, BR_PORT, QBV_MODULE);
 
-	rc = sr_get_changes_iter(session, path, &it);
+	rc = sr_get_changes_iter(session, xpath, &it);
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
-		printf("ERROR: %s sr_get_changes_iter: %s\n", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_changes_iter: %s\n", __func__, sr_strerror(rc));
 		goto cleanup;
 	}
 
 	while (SR_ERR_OK == (rc = sr_get_change_next(session, it,
 					&oper, &old_value, &new_value))) {
 		value = new_value ? new_value : old_value;
-		ifname = sr_xpath_key_value(value->xpath, "interface",
-					"name", &xp_ctx);
+		ifname = sr_xpath_key_value(value->xpath, "interface", "name", &xp_ctx);
 		if (!ifname)
 			continue;
 
 		if (strcmp(ifname, ifname_bak)) {
 			snprintf(ifname_bak, IF_NAME_MAX_LEN, "%s", ifname);
-			snprintf(xpath, XPATH_MAX_LEN,
-				 "%s[name='%s']%s/%s:*//*", IF_XPATH,
-				 ifname, BR_PORT, QBV_MODULE);
+			snprintf(xpath, XPATH_MAX_LEN, "%s[name='%s']%s/%s:*//*", IF_XPATH,
+				     ifname, BR_PORT, QBV_MODULE);
 			rc = config_qbv_per_port(session, xpath, abort, ifname);
 			if (rc != SR_ERR_OK)
 				break;
@@ -548,14 +541,12 @@ int qbv_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 {
 	int rc = SR_ERR_OK;
 
-	/* configure Qbv only when receiving the event SR_EV_DONE */
-	if (event != SR_EV_DONE)
-		return rc;
-
-	printf("Qbv callback: %s\n", path);
+    LOG_DBG("Qbv: start callback(%d): %s", (int)event, path);
 
 	rc = qbv_config(session, path, false);
+    if (rc) {
+        return SR_ERR_CALLBACK_FAILED;
+    }
 
-	return rc;
+	return SR_ERR_OK;
 }
-

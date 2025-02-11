@@ -34,6 +34,24 @@
 #include "file_mon.h"
 #include "main.h"
 
+#ifdef CONF_MONITOR
+/* tsn_operation_monitor_cb()
+ * file callback
+ */
+void tsn_operation_monitor_cb(void)
+{
+}
+
+struct sr_tsn_callback file_clbks = {
+	.callbacks_count = 1,
+	.callbacks = {
+		{
+			.f_path = "/tmp/tsn-oper-record.json",
+			.func = tsn_operation_monitor_cb
+		},
+	}
+};
+
 /*
  * backup src to target
  */
@@ -270,3 +288,4 @@ int sr_tsn_fcb_init(void)
 
 	return ret;
 }
+#endif

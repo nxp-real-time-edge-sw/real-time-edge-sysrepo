@@ -20,6 +20,7 @@
 
 #include "cb.h"
 #include "cb_streamid.h"
+
 #define NULL_CB (0)
 #define CBREC (1)
 #define CBGEN (2)
@@ -108,17 +109,15 @@ static int parse_item(sr_session_ctx_t *session, char *path)
 		 * container was deleted.
 		 */
 		if (is_del_oper(session, path)) {
-			printf("WARN: %s was deleted, disable %s",
-			       path, "this Instance.\n");
+			LOG_WRN("%s was deleted, disable this Instance.", path);
 			goto cleanup;
 		} else {
-			printf("WARN: %s sr_get_items: %s\n", __func__,
-			       sr_strerror(rc));
+			LOG_WRN("%s sr_get_items: %s", __func__, sr_strerror(rc));
 			return SR_ERR_OK;
 		}
 	} else if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get items from %s failed", path);
-		printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_items: %s", __func__, sr_strerror(rc));
 		return rc;
 	}
 
@@ -149,7 +148,7 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 	rc = sr_get_changes_iter(session, xpath, &it);
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", xpath);
-		printf("ERROR: %s sr_get_changes_iter: %s\n", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_changes_iter: %s\n", __func__, sr_strerror(rc));
 		goto cleanup;
 	}
 
@@ -208,8 +207,7 @@ int cb_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 {
 	int rc = SR_ERR_OK;
 
-	if (event != SR_EV_DONE)
-		return rc;
+    LOG_DBG("frer: start callback(%d): %s", (int)event, path);
 
 	rc = parse_config(session, path);
 
@@ -218,5 +216,9 @@ int cb_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	else
 		cbrec_execute();
 
-	return rc;
+    if (rc) {
+        return SR_ERR_CALLBACK_FAILED;
+    } else {
+        return SR_ERR_OK;
+    }
 }

@@ -42,109 +42,151 @@
 #include "brtc_cfg.h"
 #include "cb.h"
 
+#ifdef RT_HAVE_SYSTEMD
+#include <systemd/sd-daemon.h>
+#endif
 
 #define SR_CONFIG_SUBSCR(mod_name, xpath, cb)								\
     rc = sr_module_change_subscribe(session, mod_name, xpath, cb, NULL, 0, 	\
-           	SR_SUBSCR_DONE_ONLY | SR_SUBSCR_ENABLED, &subscription);		\
+           	SR_SUBSCR_DONE_ONLY, &subscription);		                    \
     if (rc != SR_ERR_OK) {													\
-        fprintf(stderr, "Subscribing for \"%s\" data changes failed (%s).",	\
-                mod_name, sr_strerror(rc));									\
-        goto cleanup;														\
+        LOG_ERR("Failed to subscribe for \"%s\" (%s).",	                    \
+                xpath, sr_strerror(rc));									\
+    } else {                                                                \
+        LOG_DBG("Subscribed for %s", xpath);                                \
     }
 
-static volatile uint8_t exit_application;
+static volatile uint32_t exit_application;
 
-static void sigint_handler(int signum)
+static int open_pid_file(const char *pid_file)
+{
+	int fd;
+
+	fd = open(pid_file, O_RDWR | O_CREAT, 0640);
+	if (fd < 0) {
+		LOG_ERR("Unable to open the PID file '%s' (%s).",
+		       pid_file, strerror(errno));
+        return -1;
+	}
+
+	if (lockf(fd, F_TLOCK, 0) < 0) {
+		if (EACCES == errno || EAGAIN == errno) {
+			LOG_ERR("Another instance of sysrepo-tsn daemon is running.");
+		} else {
+			LOG_ERR("Unable to lock sysrepo PID file '%s': %s.",
+			       pid_file, strerror(errno));
+		}
+		close(fd);
+        return -1;
+	}
+
+    return fd;
+}
+
+static int write_pid_file(int pidfd)
+{
+    char pid[30] = {0};
+    int pid_len;
+
+    if (ftruncate(pidfd, 0)) {
+        LOG_ERR("Failed to truncate pid file (%s).", strerror(errno));
+        return -1;
+    }
+
+    snprintf(pid, sizeof(pid) - 1, "%ld\n", (long) getpid());
+
+    pid_len = strlen(pid);
+    if (write(pidfd, pid, pid_len) < pid_len) {
+        LOG_ERR("Failed to write PID into pid file (%s).", strerror(errno));
+        return -1;
+    }
+    return 0;
+}
+
+static void signal_handler(int signum)
 {
 	exit_application = 1;
 }
 
-/* tsn_operation_monitor_cb()
- * file callback
- */
-void tsn_operation_monitor_cb(void)
+static void handle_signals(void)
 {
+    struct sigaction action;
+    sigset_t block_mask;
+
+    /* set the signal handler */
+    sigfillset(&block_mask);
+    action.sa_handler = signal_handler;
+    action.sa_mask = block_mask;
+    action.sa_flags = 0;
+    sigaction(SIGINT, &action, NULL);
+    sigaction(SIGQUIT, &action, NULL);
+    sigaction(SIGABRT, &action, NULL);
+    sigaction(SIGTERM, &action, NULL);
+    sigaction(SIGHUP, &action, NULL);
+
+    /* ignore */
+    action.sa_handler = SIG_IGN;
+    sigaction(SIGPIPE, &action, NULL);
+    sigaction(SIGTSTP, &action, NULL);
+    sigaction(SIGTTIN, &action, NULL);
+    sigaction(SIGTTOU, &action, NULL);
 }
 
-struct sr_tsn_callback file_clbks = {
-	.callbacks_count = 1,
-	.callbacks = {
-		{
-			.f_path = "/tmp/tsn-oper-record.json",
-			.func = tsn_operation_monitor_cb
-		},
-	}
-};
-
-void check_pid_file(void)
+static void print_usage(char *name)
 {
-	char pid_file[] = "/var/run/sysrepo-tsn.pid";
-	char str[20] = { 0 };
-	int ret = 0;
-	int fd;
-
-	/* open PID file */
-	fd = open(pid_file, O_RDWR | O_CREAT, 0640);
-	if (fd < 0) {
-		printf("Unable to open sysrepo PID file '%s': %s.\n",
-		       pid_file, strerror(errno));
-		exit(1);
-	}
-
-	/* acquire lock on the PID file */
-	if (lockf(fd, F_TLOCK, 0) < 0) {
-		if (EACCES == errno || EAGAIN == errno) {
-			printf("Another instance of sysrepo-tsn %s\n",
-			       "daemon is running, unable to start.");
-		} else {
-			printf("Unable to lock sysrepo PID file '%s': %s.",
-			       pid_file, strerror(errno));
-		}
-		close(fd);
-		exit(1);
-	}
-
-	/* write PID into the PID file */
-	snprintf(str, 20, "%d\n", getpid());
-	ret = write(fd, str, strlen(str));
-	if (-1 == ret) {
-		printf("ERR: Unable to write into sysrepo PID file '%s': %s.",
-		       pid_file, strerror(errno));
-		close(fd);
-		exit(1);
-	}
-
-	close(fd);
+    printf("Usage: %s [-dh]\n", name);
+    printf("Options:\n");
+    printf(" -d         Debug mode (do not daemonize and print verbose messages.).\n");
+    printf(" -h         Display help.\n");
 }
 
 int main(int argc, char **argv)
 {
-	int rc = SR_ERR_OK;
+	int rc = SR_ERR_INTERNAL;
+    int ret = EXIT_FAILURE;
 	sr_conn_ctx_t *connection = NULL;
 	sr_session_ctx_t *session = NULL;
 	sr_subscription_ctx_t *subscription = NULL;
 	int daemonize = 1;
     char *mod_name = NULL;
     char *xpath = NULL;
+    char *pid_file = "/var/run/sysrepo-tsn.pid";
+    int pid_fd = -1;
+    int opt;
 
 	exit_application = 0;
 
-	if ((argc >= 2) && !strncmp(argv[1], "-d", 2)) {
-		printf("Enter Debug Mode!\n");
-		daemonize = 0;
-	}
+    while ((opt = getopt(argc, argv, "dh")) != -1) {
+
+        switch (opt) {
+        case 'd':
+		    daemonize = 0;
+            log_set_output_level(LOG_LEVEL_DBG);
+		    LOG_DBG("Enter Debug Mode!");
+            break;
+        case 'h':
+            print_usage(argv[0]);
+            return EXIT_SUCCESS;
+        default:
+            break;
+        }
+    }
 
 	/* daemonize */
 	if (daemonize == 1) {
 		if (daemon(0, 0) != 0) {
-			printf("Daemonizing sysrepo-tsn failed (%s)",
-					strerror(errno));
-			return rc;
+			LOG_ERR("Daemonizing sysrepo-tsn failed (%s)", strerror(errno));
+			return EXIT_FAILURE;
 		}
 	}
 
+    handle_signals();
+
 	/* Check pid file */
-	check_pid_file();
+	pid_fd = open_pid_file(pid_file);
+	if (pid_fd < 0) {
+        goto cleanup;
+    }
 
 #ifdef CONF_MONITOR
 	/* Init file callbacks */
@@ -161,60 +203,47 @@ int main(int argc, char **argv)
 	/* Connect to sysrepo */
 	rc = sr_connect(SR_CONN_DEFAULT, &connection);
 	if (rc != SR_ERR_OK) {
-		fprintf(stderr, "Error by sr_connect: %s\n", sr_strerror(rc));
+		LOG_ERR("sr_connect() error: %s\n", sr_strerror(rc));
 		goto cleanup;
 	}
 
-	/* Start session */
+	/* Start a session */
 	rc = sr_session_start(connection, SR_DS_RUNNING, &session);
 	if (rc != SR_ERR_OK) {
-		fprintf(stderr, "Error by sr_session_start: %s\n",
-			sr_strerror(rc));
+		LOG_ERR("sr_session_start() error: %s\n", sr_strerror(rc));
 		goto cleanup;
 	}
 
     mod_name = "ietf-interfaces";
 
-    /* Subscribe to IP_CFG subtree */
+    /* Subscribe to the ipv4 subtree */
     xpath = "/ietf-interfaces:interfaces/interface/ietf-ip:ipv4";
     SR_CONFIG_SUBSCR(mod_name, xpath, ip_subtree_change_cb);
-
-	/* Subscribe to QBV subtree */
-	xpath = QBV_GATE_PARA_XPATH;
-    SR_CONFIG_SUBSCR(mod_name, xpath, qbv_subtree_change_cb);
-	rc = sr_enable_module_feature(connection, QBV_MODULE, QBV_FEATURE);
-	if (rc) {
-		goto cleanup;
-	}
 
     /* Subscribe to QBU subtree */
 	xpath = QBU_PARA_XPATH;
     SR_CONFIG_SUBSCR(mod_name, xpath, qbu_subtree_change_cb);
-	rc = sr_enable_module_feature(connection, QBU_MODULE, QBU_FEATURE);
-	if (rc) {
-		goto cleanup;
-	}
+
+	/* Subscribe to QBV subtree */
+	xpath = QBV_GATE_PARA_XPATH;
+    SR_CONFIG_SUBSCR(mod_name, xpath, qbv_subtree_change_cb);
 
     mod_name = "ieee802-dot1q-bridge";
 
     /* Subscribe to QCI-Stream-Filter subtree */
-    xpath = "/ieee802-dot1q-bridge:bridges/bridge/component"
-            "/ieee802-dot1q-psfp-bridge:stream-filters";
+    xpath = "/ieee802-dot1q-bridge:bridges/bridge/component/ieee802-dot1q-psfp-bridge:stream-filters";
     SR_CONFIG_SUBSCR(mod_name, xpath, qci_sf_subtree_change_cb);
 
     /* Subscribe to QCI-Stream-Gate subtree */
-    xpath = "/ieee802-dot1q-bridge:bridges/bridge/component"
-            "ieee802-dot1q-psfp-bridge:stream-gates";
+    xpath = "/ieee802-dot1q-bridge:bridges/bridge/component/ieee802-dot1q-psfp-bridge:stream-gates";
     SR_CONFIG_SUBSCR(mod_name, xpath, qci_sg_subtree_change_cb);
 
     /* Subscribe to QCI-Flow-Meter subtree */
-    xpath = "/ieee802-dot1q-bridge:bridges/bridge/component"
-            "/ieee802-dot1q-psfp-bridge:flow-meters";
+    xpath = "/ieee802-dot1q-bridge:bridges/bridge/component/ieee802-dot1q-psfp-bridge:flow-meters";
     SR_CONFIG_SUBSCR(mod_name, xpath, qci_fm_subtree_change_cb);
 
     /* Subscribe to VLAN_CFG subtree */
-    xpath = "/ieee802-dot1q-bridge:bridges/bridge/component"
-            "/bridge-vlan";
+    xpath = "/ieee802-dot1q-bridge:bridges/bridge/component/bridge-vlan";
     SR_CONFIG_SUBSCR(mod_name, xpath, vlan_subtree_change_cb);
 
     /* Subscribe to MAC_CFG subtree */
@@ -222,29 +251,38 @@ int main(int argc, char **argv)
     SR_CONFIG_SUBSCR(mod_name, xpath, mac_subtree_change_cb);
 
     /* Subscribe to BR_TC_CFG subtree */
-    xpath = "/ieee802-dot1q-bridge:bridges/bridge/"
-            "/nxp-bridge-vlan-tc-flower:traffic-control";
+    xpath = "/ieee802-dot1q-bridge:bridges/bridge/component/nxp-bridge-vlan-tc-flower:traffic-control";
     SR_CONFIG_SUBSCR(mod_name, xpath, brtc_subtree_change_cb);
 
-
     mod_name = "ieee802-dot1cb-stream-identification";
-
     /* Subscribe to CB-StreamID subtree */
     xpath = "/ieee802-dot1cb-stream-identification:stream-identity";
     SR_CONFIG_SUBSCR(mod_name, xpath, cb_streamid_subtree_change_cb);
 
-
     mod_name = "ieee802-dot1cb-frer";
-
     /* Subscribe to CB */
     xpath = "/ieee802-dot1cb-frer:frer";
     SR_CONFIG_SUBSCR(mod_name, xpath, cb_subtree_change_cb);
 
-	/* Loop until ctrl-c is pressed / SIGINT is received */
-	signal(SIGINT, sigint_handler);
-	signal(SIGPIPE, SIG_IGN);
-	while (!exit_application)
-		sleep(1);  /* Or do some more useful work... */
+	if (write_pid_file(pid_fd) < 0) {
+        goto cleanup;
+    }
+
+#ifdef RT_HAVE_SYSTEMD
+    /* notify systemd */
+    sd_notify(0, "READY=1");
+#endif
+
+	while (!exit_application) {
+		sleep(1);
+    }
+
+#ifdef RT_HAVE_SYSTEMD
+    /* notify systemd */
+    sd_notify(0, "STOPPING=1");
+#endif
+
+    ret = EXIT_SUCCESS;
 
 cleanup:
 	destroy_tsn_mutex();
@@ -254,6 +292,10 @@ cleanup:
 		sr_session_stop(session);
 	if (connection)
 		sr_disconnect(connection);
+    if (pid_fd >= 0) {
+        close(pid_fd);
+        unlink(pid_file);
+    }
 
-	return rc;
+	return ret;
 }

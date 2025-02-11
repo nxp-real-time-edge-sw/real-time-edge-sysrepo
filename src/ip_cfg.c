@@ -3,7 +3,7 @@
  * @author hongbo wang
  * @brief Application to configure IP address based on sysrepo datastore.
  *
- * Copyright 2020 NXP
+ * Copyright 2020-2024 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <libyang/libyang.h>
 
 #include "ip_cfg.h"
 
@@ -36,6 +38,7 @@ struct item_cfg {
 };
 static struct item_cfg sitem_conf;
 
+#if 0
 static int get_inet_cfg(char *ifname, int req, void *buf, int len)
 {
 	int ret = 0;
@@ -48,7 +51,7 @@ static int get_inet_cfg(char *ifname, int req, void *buf, int len)
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
-		PRINT("create socket failed! ret:%d\n", sockfd);
+		LOG_ERR("create socket failed! ret:%d", sockfd);
 		return -2;
 	}
 
@@ -58,7 +61,7 @@ static int get_inet_cfg(char *ifname, int req, void *buf, int len)
 	ret = ioctl(sockfd, req, &ifr);
 	close(sockfd);
 	if (ret < 0) {
-		PRINT("ioctl error! ret:%d\n", ret);
+		LOG_ERR("ioctl error! ret:%d", ret);
 		return -3;
 	}
 
@@ -72,15 +75,16 @@ static int get_inet_cfg(char *ifname, int req, void *buf, int len)
 	return 0;
 }
 
-int get_inet_ip(char *ifname, struct in_addr *ip)
+static int get_inet_ip(char *ifname, struct in_addr *ip)
 {
 	return get_inet_cfg(ifname, SIOCGIFADDR, ip, ADDR_LEN);
 }
 
-int get_inet_mask(char *ifname, struct in_addr *mask)
+static int get_inet_mask(char *ifname, struct in_addr *mask)
 {
 	return get_inet_cfg(ifname, SIOCGIFNETMASK, mask, ADDR_LEN);
 }
+#endif
 
 static int set_inet_cfg(char *ifname, int req, void *buf, int len)
 {
@@ -94,7 +98,7 @@ static int set_inet_cfg(char *ifname, int req, void *buf, int len)
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
-		PRINT("create socket failed! ret:%d\n", sockfd);
+		LOG_ERR("create socket failed! ret:%d", sockfd);
 		return -2;
 	}
 
@@ -104,7 +108,7 @@ static int set_inet_cfg(char *ifname, int req, void *buf, int len)
 	ret = ioctl(sockfd, SIOCGIFFLAGS, &ifr);
 	if (ret < 0) {
 		close(sockfd);
-		PRINT("%s:can not find \"%s\"\n", __func__, ifname);
+		LOG_ERR("%s:can not find \"%s\"", __func__, ifname);
 		return -3;
 	}
 
@@ -120,19 +124,19 @@ static int set_inet_cfg(char *ifname, int req, void *buf, int len)
 	ret = ioctl(sockfd, req, &ifr);
 	close(sockfd);
 	if (ret < 0) {
-		PRINT("%s ioctl error! ret:%d\n", __func__, ret);
+		LOG_ERR("%s ioctl error! ret:%d", __func__, ret);
 		return -4;
 	}
 
 	return 0;
 }
 
-int set_inet_ip(char *ifname, struct in_addr *ip)
+static int set_inet_ip(char *ifname, struct in_addr *ip)
 {
 	return set_inet_cfg(ifname, SIOCSIFADDR, ip, ADDR_LEN);
 }
 
-int set_inet_mask(char *ifname, struct in_addr *mask)
+static int set_inet_mask(char *ifname, struct in_addr *mask)
 {
 	return set_inet_cfg(ifname, SIOCSIFNETMASK, mask, ADDR_LEN);
 }
@@ -149,7 +153,7 @@ static int set_inet_updown(char *ifname, bool upflag)
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0)	{
-		PRINT("create socket failed! ret:%d\n", sockfd);
+		LOG_ERR("create socket failed! ret: %d", sockfd);
 		return -2;
 	}
 
@@ -159,7 +163,7 @@ static int set_inet_updown(char *ifname, bool upflag)
 	ret = ioctl(sockfd, SIOCGIFFLAGS, &ifr);
 	if (ret < 0) {
 		close(sockfd);
-		PRINT("%s:get interface flag ret:%d\n", __func__, ret);
+		LOG_ERR("get interface flag ret: %d", ret);
 		return -3;
 	}
 
@@ -174,176 +178,11 @@ static int set_inet_updown(char *ifname, bool upflag)
 	ret = ioctl(sockfd, SIOCSIFFLAGS, &ifr);
 	close(sockfd);
 	if (ret < 0) {
-		PRINT("ioctl error! ret:%d, need root account!\n", ret);
-		PRINT("Note: this operation needs root permission!\n");
+		LOG_ERR("ioctl error! ret: %d, need root account!", ret);
 		return -4;
 	}
 
 	return 0;
-}
-
-bool is_valid_addr(char *ip)
-{
-	int ret = 0;
-	struct in_addr ip_addr;
-
-	if (!ip)
-		return false;
-
-	ret = inet_aton(ip, &ip_addr);
-	if (ret == 0)
-		return false;
-
-	return true;
-}
-
-static int parse_node(sr_session_ctx_t *session, sr_val_t *value,
-			struct item_cfg *conf)
-{
-	int rc = SR_ERR_OK;
-	sr_xpath_ctx_t xp_ctx = {0};
-	char *strval = NULL;
-	char *nodename = NULL;
-	struct sub_item_cfg *ipv4 = NULL;
-
-	if (!session || !value || !conf)
-		return rc;
-
-	sr_xpath_recover(&xp_ctx);
-	nodename = sr_xpath_node_name(value->xpath);
-	if (!nodename)
-		goto ret_tag;
-
-	strval = value->data.string_val;
-
-	if (!strcmp(nodename, "ip")) {
-		if (is_valid_addr(strval) && (conf->ipv4_cnt < MAX_IP_NUM)) {
-			conf->ipv4_cnt = 0;  /* only support one address now */
-			ipv4 = &conf->ipv4[conf->ipv4_cnt++];
-			ipv4->ip.s_addr = inet_addr(strval);
-			conf->valid = true;
-		}
-	} else if (!strcmp(nodename, "netmask")) {
-		if (is_valid_addr(strval) && (conf->ipv4_cnt > 0)) {
-			ipv4 = &conf->ipv4[conf->ipv4_cnt - 1];
-			ipv4->mask.s_addr = inet_addr(strval);
-		}
-	} else if (!strcmp(nodename, "enabled")) {
-		conf->enabled = value->data.bool_val;
-	}
-
-ret_tag:
-	return rc;
-}
-
-static int parse_item(sr_session_ctx_t *session, char *path,
-			struct item_cfg *conf)
-{
-	size_t i;
-	size_t count;
-	int rc = SR_ERR_OK;
-	sr_val_t *values = NULL;
-
-	rc = sr_get_items(session, path, 0, 0, &values, &count);
-	if (rc == SR_ERR_NOT_FOUND) {
-		/*
-		 * If can't find any item, we should check whether this
-		 * container was deleted.
-		 */
-		if (is_del_oper(session, path)) {
-			printf("WARN: %s was deleted, disable %s",
-			       path, "this Instance.\n");
-			goto cleanup;
-		} else {
-			printf("WARN: %s sr_get_items: %s\n", __func__,
-			       sr_strerror(rc));
-			return SR_ERR_OK;
-		}
-	} else if (rc != SR_ERR_OK) {
-		sr_session_set_error_message(session, "Get items from %s failed", path);
-		printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
-		return rc;
-	}
-
-	for (i = 0; i < count; i++) {
-		if (values[i].type == SR_LIST_T
-		    || values[i].type == SR_CONTAINER_PRESENCE_T)
-			continue;
-
-		rc = parse_node(session, &values[i], conf);
-	}
-
-cleanup:
-	sr_free_values(values, count);
-
-	return rc;
-}
-
-static int parse_config(sr_session_ctx_t *session, const char *path)
-{
-	int rc = SR_ERR_OK;
-	sr_change_oper_t oper;
-	char *ifname = NULL;
-	sr_val_t *value = NULL;
-	sr_val_t *old_value = NULL;
-	sr_val_t *new_value = NULL;
-	sr_change_iter_t *it = NULL;
-	sr_xpath_ctx_t xp_ctx = {0};
-	char xpath[XPATH_MAX_LEN] = {0};
-	char ifname_bak[IF_NAME_MAX_LEN] = {0};
-	struct item_cfg *conf = &sitem_conf;
-
-	memset(conf, 0, sizeof(struct item_cfg));
-
-	snprintf(xpath, XPATH_MAX_LEN, "%s//*", path);
-
-	rc = sr_get_changes_iter(session, xpath, &it);
-	if (rc != SR_ERR_OK) {
-		sr_session_set_error_message(session, "Get changes from %s failed", xpath);
-		printf("ERROR: %s sr_get_changes_iter: %s\n", __func__, sr_strerror(rc));
-		goto cleanup;
-	}
-
-	while (SR_ERR_OK == (rc = sr_get_change_next(session, it,
-					&oper, &old_value, &new_value))) {
-
-		value = new_value ? new_value : old_value;
-		if (!value)
-			continue;
-
-		ifname = sr_xpath_key_value(value->xpath, "interface",
-					    "name", &xp_ctx);
-
-		sr_free_val(old_value);
-		sr_free_val(new_value);
-
-		if (!ifname)
-			continue;
-
-		if (!strcmp(ifname, ifname_bak))
-			continue;
-		snprintf(ifname_bak, IF_NAME_MAX_LEN, "%s", ifname);
-
-		snprintf(conf->ifname, IF_NAME_MAX_LEN, "%s", ifname);
-		snprintf(xpath, XPATH_MAX_LEN, "%s[name='%s']/%s:*//*",
-					IF_XPATH, ifname, IP_MODULE_NAME);
-
-		rc = parse_item(session, xpath, conf);
-		if (rc != SR_ERR_OK)
-			break;
-	}
-
-cleanup:
-
-	if (!conf->valid || strlen(conf->ifname) == 0) {
-			return SR_ERR_INVAL_ARG;
-	}
-
-	if (rc == SR_ERR_NOT_FOUND)
-		rc = SR_ERR_OK;
-
-    sr_free_change_iter(it);
-	return rc;
 }
 
 static int set_config(sr_session_ctx_t *session, bool abort)
@@ -366,6 +205,7 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 
 	if (!conf->enabled) {
 		set_inet_updown(conf->ifname, false);
+        LOG_DBG("%s: disable the interface", conf->ifname);
 		return rc;
 	}
 
@@ -379,7 +219,7 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 			if (ret != 0)
 				return SR_ERR_INVAL_ARG;
 
-			PRINT("ip %s-%s\n", ifname, inet_ntoa(ipv4->ip));
+			LOG_DBG("%s: set IP address to %s", ifname, inet_ntoa(ipv4->ip));
 		}
 
 		if (ipv4->mask.s_addr) {
@@ -387,7 +227,7 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 			if (ret != 0)
 				return SR_ERR_INVAL_ARG;
 
-			PRINT("mask %s-%s\n", ifname, inet_ntoa(ipv4->mask));
+			LOG_DBG("%s: set netmask to %s", ifname, inet_ntoa(ipv4->mask));
 		}
 	}
 	set_inet_updown(conf->ifname, true);
@@ -395,20 +235,164 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 	return rc;
 }
 
+static int parse_ipv4_address(const struct lyd_node *node, struct sub_item_cfg *ipv4)
+{
+    const struct lyd_node *iter;
+	const char *nodename;
+
+	LY_LIST_FOR(lyd_child(node), iter) {
+        nodename = LYD_NAME(iter);
+
+        if (!strcmp(nodename, "ip")) {
+            if (!inet_aton(lyd_get_value(iter), &ipv4->ip)) {
+                goto err;
+            }
+        } else if (!strcmp(nodename, "netmask")) {
+            if (!inet_aton(lyd_get_value(iter), &ipv4->mask)) {
+                goto err;
+            }
+        }
+    }
+    return SR_ERR_OK;
+
+err:
+    return SR_ERR_INVAL_ARG;
+}
+
+static int parse_ipv4(sr_session_ctx_t *session, struct item_cfg *conf)
+{
+    const struct lyd_node_term *term;
+    const struct lyd_node *iter;
+    const struct lyd_node *node;
+    sr_data_t *subtree = NULL;
+	const char *nodename;
+    char *xpath;
+    int rc = SR_ERR_OK;
+
+    conf->ipv4_cnt = 0;
+    conf->enabled = false;
+
+    rc = asprintf(&xpath, "/ietf-interfaces:interfaces/interface[name='%s']/ietf-ip:ipv4",
+             &conf->ifname[0]);
+    if (rc < 0) {
+        rc = SR_ERR_NO_MEMORY;
+        goto err;
+    }
+
+    rc = sr_get_subtree(session, xpath, 0, &subtree);
+    free(xpath);
+    if (rc) {
+        goto err;
+    }
+    node = subtree->tree;
+
+    print_node_tree_xml(node);
+
+	LY_LIST_FOR(lyd_child(node), iter) {
+
+        nodename = LYD_NAME(iter);
+        if (!strcmp(nodename, "enabled")) {
+            term = (struct lyd_node_term *)iter;
+            conf->enabled = term->value.boolean ? true : false;
+
+        } else if (!strcmp(nodename, "address")) {
+            if ((rc = parse_ipv4_address(iter, &conf->ipv4[conf->ipv4_cnt]))) {
+                goto err;
+            }
+            conf->ipv4_cnt++;
+        }
+    }
+    conf->valid = true;
+    sr_release_data(subtree);
+    return SR_ERR_OK;
+
+err:
+    sr_release_data(subtree);
+    return rc;
+}
+
+/*
+
+module: ietf-interfaces
+  +--rw interfaces
+     +--rw interface* [name]
+        +--rw ip:ipv4!
+           +--rw ip:enabled?      boolean
+           +--rw ip:forwarding?   boolean
+           +--rw ip:mtu?          uint16
+           +--rw ip:address* [ip]
+           |  +--rw ip:ip                     inet:ipv4-address-no-zone
+           |  +--rw (ip:subnet)
+           |  |  +--:(ip:prefix-length)
+           |  |  |  +--rw ip:prefix-length?   uint8
+           |  |  +--:(ip:netmask)
+           |  |     +--rw ip:netmask?         yang:dotted-quad {ipv4-non-contiguous-netmasks}?
+           |  +--ro ip:origin?                ip-address-origin
+           +--rw ip:neighbor* [ip]
+              +--rw ip:ip                    inet:ipv4-address-no-zone
+              +--rw ip:link-layer-address    yang:phys-address
+              +--ro ip:origin?               neighbor-origin
+*/
+
 int ip_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
                          const char *module_name, const char *path,
                          sr_event_t event, uint32_t request_id,
                          void *private_ctx)
 {
+    const struct lyd_node *node = NULL;
+	sr_change_iter_t *iter = NULL;
+    sr_change_oper_t op;
 	int rc = SR_ERR_OK;
+    char *xpath;
 
-	if (event != SR_EV_DONE)
+    LOG_DBG("ipv4: start callback(%d): %s", (int)event, path);
+
+    rc = asprintf(&xpath, "%s//*", path);
+    if (rc < 0) {
+        return SR_ERR_CALLBACK_FAILED;
+    }
+
+	rc = sr_get_changes_iter(session, xpath, &iter);
+    free(xpath);
+	if (rc != SR_ERR_OK) {
+        sr_session_set_error_message(session, "Getting changes iter failed(%s).",
+                sr_strerror(rc));
 		return rc;
-
-	rc = parse_config(session, path);
-	if (rc == SR_ERR_OK) {
-		rc = set_config(session, false);
 	}
 
-	return rc;
+    do {
+        rc = sr_get_change_tree_next(session, iter, &op, &node, NULL, NULL, NULL);
+        if (rc != SR_ERR_OK) {
+            break;
+        }
+        LOG_DBG("node name: %s, opt: %d", LYD_NAME(node), (int)op);
+
+        if (op == SR_OP_CREATED || op == SR_OP_MODIFIED) {
+
+            sitem_conf.ifname[0] = 0;
+            strncpy(sitem_conf.ifname, get_ifname(node), sizeof(sitem_conf.ifname) - 1);
+            rc = parse_ipv4(session, &sitem_conf);
+            break;
+        }
+    } while(1);
+
+    sr_free_change_iter(iter);
+
+    if (rc != SR_ERR_OK && rc != SR_ERR_NOT_FOUND) {
+        sr_session_set_error_message(session, "Parsing IPv4 address failed(%s).",
+                sr_strerror(rc));
+        LOG_ERR("Parsing IPv4 address failed(%s).", sr_strerror(rc));
+		return SR_ERR_CALLBACK_FAILED;
+    }
+
+	rc = set_config(session, false);
+    if (rc != SR_ERR_OK) {
+        sr_session_set_error_message(session, "Setting IPv4 address failed(%s).",
+                sr_strerror(rc));
+        LOG_ERR("Setting IPv4 address failed(%s).", sr_strerror(rc));
+        return SR_ERR_CALLBACK_FAILED;
+    }
+
+    LOG_DBG("ipv4: end callback(%d): %s", (int)event, path);
+    return SR_ERR_OK;
 }

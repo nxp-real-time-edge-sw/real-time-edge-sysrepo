@@ -126,7 +126,7 @@ int parse_qci_fm(sr_session_ctx_t *session, sr_val_t *value,
 			fmi->fmconf.cf = true;
 		} else {
 			sr_session_set_error_message(session, "Invalid '%s'", num_str);
-			printf("ERROR: Invalid '%s' in %s!\n", num_str, value->xpath);
+			LOG_ERR("Invalid '%s' in %s!", num_str, value->xpath);
 			rc = SR_ERR_INVAL_ARG;
 			goto out;
 		}
@@ -138,7 +138,7 @@ int parse_qci_fm(sr_session_ctx_t *session, sr_val_t *value,
 			fmi->fmconf.cm = true;
 		} else {
 			sr_session_set_error_message(session, "Invalid '%s'", num_str);
-			printf("ERROR: Invalid '%s' in %s!\n", num_str, value->xpath);
+			LOG_ERR("Invalid '%s' in %s!", num_str, value->xpath);
 			rc = SR_ERR_INVAL_ARG;
 			goto out;
 		}
@@ -176,7 +176,7 @@ int get_fm_per_port_per_id(sr_session_ctx_t *session, const char *path)
 
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
-		printf("ERROR: %s sr_get_changes_iter: %s", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_changes_iter: %s", __func__, sr_strerror(rc));
 		goto out;
 	}
 
@@ -252,7 +252,7 @@ int abort_fm_config(sr_session_ctx_t *session, char *path,
 	rc = sr_get_changes_iter(session, path, &it);
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
-		printf("ERROR: Get changes from %s failed\n", path);
+		LOG_ERR("Get changes from %s failed", path);
 		goto out;
 	}
 
@@ -311,18 +311,16 @@ int parse_fm_per_port_per_id(sr_session_ctx_t *session, bool abort)
 			 * container was deleted.
 			 */
 			if (is_del_oper(session, xpath)) {
-				printf("WARN: %s was deleted, disable %s",
-				       xpath, "this Instance.\n");
+			    LOG_WRN("%s was deleted, disable this Instance.", xpath);
 				cur_node->fm_ptr->enable = false;
 			} else {
-				printf("WARN: %s sr_get_items: %s\n", __func__,
-				       sr_strerror(rc));
+			    LOG_WRN("%s sr_get_items: %s", __func__, sr_strerror(rc));
 				del_list_node(cur_node->pre, QCI_T_FM);
 			}
 			cur_node = cur_node->next;
 		} else if (rc != SR_ERR_OK) {
 			sr_session_set_error_message(session, "Get items from %s failed", xpath);
-			printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
+		    LOG_ERR("%s sr_get_items: %s", __func__, sr_strerror(rc));
 			goto out;
 		} else {
 			for (i = 0; i < count; i++) {
@@ -350,6 +348,15 @@ out:
 	return rc;
 }
 
+void print_fm_config(struct tsn_qci_psfp_fmi *fmiconf)
+{
+    LOG_DBG("tsn_qci_psfp_fmi: cir=%d, cbs=%d, eir=%d, ebs=%d, cf=%d, cm=%d, \
+            drop_on_yellow=%d, mark_red_enable=%d, mark_red=%d",
+            fmiconf->cir, fmiconf->cbs, fmiconf->eir,
+            fmiconf->ebs, fmiconf->cf, fmiconf->cm,
+            fmiconf->drop_on_yellow, fmiconf->mark_red_enable, fmiconf->mark_red);
+}
+
 int config_fm(sr_session_ctx_t *session)
 {
 	int rc = SR_ERR_OK;
@@ -358,6 +365,12 @@ int config_fm(sr_session_ctx_t *session)
 	if (!stc_cfg_flag)
 		init_tsn_socket();
 	while (cur_node) {
+
+        LOG_DBG("config_fm: port-name=%s, flow-meters-handle=%d, enable=%d",
+                cur_node->fm_ptr->port, cur_node->fm_ptr->fm_id,
+                cur_node->fm_ptr->enable);
+        print_fm_config(&(cur_node->fm_ptr->fmconf));
+
 		/* set new flow meter configuration */
 		rc = tsn_qci_psfp_fmi_set(cur_node->fm_ptr->port,
 					  cur_node->fm_ptr->fm_id,
@@ -455,9 +468,7 @@ int qci_fm_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0,};
 
-	/* configure Qbv only when receiving the event SR_EV_DONE */
-	if (event != SR_EV_DONE)
-		return rc;
+    LOG_DBG("flow-meters: start callback(%d): %s", (int)event, path);
 
 	snprintf(xpath, XPATH_MAX_LEN, "%s%s//*", BRIDGE_COMPONENT_XPATH,
 		 QCIFM_XPATH);
@@ -476,5 +487,9 @@ int qci_fm_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 		free_list(fm_list_head, QCI_T_FM);
 		fm_list_head = NULL;
 	}
-	return rc;
+    if (rc) {
+        return SR_ERR_CALLBACK_FAILED;
+    } else {
+        return SR_ERR_OK;
+    }
 }

@@ -42,8 +42,8 @@ static int set_inet_br_vlan(char *ifname, int vid, bool addflag)
 		snprintf(cmdstr, MAX_CMD_LEN, "bridge vlan del dev %s vid %d",
 			 ifname, vid);
 
+    LOG_DBG("Command: %s", cmdstr);
 	ret = system(cmdstr);
-
 	if (SYSCALL_OK(ret))
 		return 0;
 	else
@@ -63,7 +63,7 @@ static int set_inet_vlan(char *ifname, int vid, bool addflag)
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
-		PRINT("create socket failed! ret:%d\n", sockfd);
+		PRINT("create socket failed! ret:%d", sockfd);
 		return -2;
 	}
 
@@ -81,7 +81,7 @@ static int set_inet_vlan(char *ifname, int vid, bool addflag)
 	ret = ioctl(sockfd, SIOCSIFVLAN, &ifr);
 	close(sockfd);
 	if (ret < 0) {
-		PRINT("%s ioctl error! ret:%d\n", __func__, ret);
+		PRINT("%s ioctl error! ret:%d", __func__, ret);
 		return -3;
 	}
 
@@ -137,18 +137,16 @@ static int parse_item(sr_session_ctx_t *session, char *path,
 		 * container was deleted.
 		 */
 		if (is_del_oper(session, path)) {
-			printf("WARN: %s was deleted, disable %s",
-			       path, "this Instance.\n");
+			LOG_WRN("%s was deleted, disable this Instance.", path);
 			conf->delflag = true;
 			goto cleanup;
 		} else {
-			printf("WARN: %s sr_get_items: %s\n", __func__,
-			       sr_strerror(rc));
+			LOG_WRN("%s sr_get_items: %s", __func__, sr_strerror(rc));
 			return SR_ERR_OK;
 		}
 	} else if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get items from %s failed", path);
-		printf("ERROR: %s sr_get_items: %s\n", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_items: %s", __func__, sr_strerror(rc));
 		return rc;
 	}
 
@@ -185,7 +183,7 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 	rc = sr_get_changes_iter(session, xpath, &it);
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", xpath);
-		printf("ERROR: %s sr_get_changes_iter: %s\n", __func__, sr_strerror(rc));
+		LOG_ERR("%s sr_get_changes_iter: %s", __func__, sr_strerror(rc));
 		goto cleanup;
 	}
 
@@ -196,8 +194,7 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 		if (!value)
 			continue;
 
-		vid = sr_xpath_key_value(value->xpath, "vlan",
-					    "vid", &xp_ctx);
+		vid = sr_xpath_key_value(value->xpath, "vlan", "vid", &xp_ctx);
 
 		sr_free_val(old_value);
 		sr_free_val(new_value);
@@ -239,10 +236,10 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 	if (conf->delflag) {
 		conf->delflag = false;
 		ret = set_inet_br_vlan(conf->ifname, conf->vid, false);
-		PRINT("del vlan ifname:%s vid:%d\n", conf->ifname, conf->vid);
+		LOG_DBG("del vlan ifname:%s vid:%d", conf->ifname, conf->vid);
 	} else {
 		ret = set_inet_br_vlan(conf->ifname, conf->vid, true);
-		PRINT("add vlan ifname:%s vid:%d\n", conf->ifname, conf->vid);
+		LOG_DBG("add vlan ifname:%s vid:%d", conf->ifname, conf->vid);
 	}
 
 	if (ret != 0)
@@ -251,24 +248,67 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 	return rc;
 }
 
+/*
+module: ieee802-dot1q-bridge
+  +--rw bridges
+     +--rw bridge* [name]
+        +--rw component* [name]
+           +--rw bridge-vlan
+              +--ro version?                   uint16
+              +--ro max-vids?                  uint16
+              +--ro override-default-pvid?     boolean
+              +--ro protocol-template?         dot1qtypes:protocol-frame-format-type {port-and-protocol-based-vlan}?
+              +--ro max-msti?                  uint16
+              +--rw vlan* [vid]
+              |  +--rw vid               dot1qtypes:vlan-index-type
+              |  +--rw name?             dot1qtypes:name-type
+              |  +--ro untagged-ports*   if:interface-ref
+              |  +--ro egress-ports*     if:interface-ref
+              +--rw protocol-group-database* [db-index] {port-and-protocol-based-vlan}?
+              |  +--rw db-index                 uint16
+              |  +--rw frame-format-type?       dot1qtypes:protocol-frame-format-type
+              |  +--rw (frame-format)?
+              |  |  +--:(ethernet-rfc1042-snap8021H)
+              |  |  |  +--rw ethertype?         dot1qtypes:ethertype-type
+              |  |  +--:(snap-other)
+              |  |  |  +--rw protocol-id?       string
+              |  |  +--:(llc-other)
+              |  |     +--rw dsap-ssap-pairs
+              |  |        +--rw llc-address?   string
+              |  +--rw group-id?                uint32
+              +--rw vid-to-fid-allocation* [vids]
+              |  +--rw vids               dot1qtypes:vid-range-type
+              |  +--ro fid?               uint32
+              |  +--ro allocation-type?   enumeration
+              +--rw fid-to-vid-allocation* [fid]
+              |  +--rw fid                uint32
+              |  +--ro allocation-type?   enumeration
+              |  +--ro vid*               dot1qtypes:vlan-index-type
+              +--rw vid-to-fid* [vid]
+                 +--rw vid    dot1qtypes:vlan-index-type
+                 +--rw fid?   uint32
+
+*/
+
 int vlan_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
                            const char *module_name, const char *path,
                            sr_event_t event, uint32_t request_id,
                            void *private_ctx)
 {
 	int rc = SR_ERR_OK;
-	char xpath[XPATH_MAX_LEN] = {0};
 
-	if (event != SR_EV_DONE)
-		return rc;
-
-	snprintf(xpath, XPATH_MAX_LEN, "%s", path);
+    LOG_DBG("bridge-vlan: start callback(%d): %s", (int)event, path);
 
 	memset(&sitem_conf, 0, sizeof(struct item_cfg));
-	rc = parse_config(session, xpath);
+	rc = parse_config(session, path);
 	if (rc == SR_ERR_OK) {
 		rc = set_config(session, false);
 	}
 
-	return rc;
+    if (rc) {
+        return SR_ERR_CALLBACK_FAILED;
+    } else {
+        LOG_DBG("bridge-vlan: end callback(%d): %s", (int)event, path);
+        return SR_ERR_OK;
+    }
 }

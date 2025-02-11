@@ -29,33 +29,58 @@
 #include "common.h"
 #include "qbu.h"
 
-#define NODE_SET_SIZE	(20U)
-
-static uint32_t get_preemptible_queues_mask(const struct lyd_node *node)
+static int get_preemptible_queues_mask(sr_session_ctx_t *session, char *ifname,
+                                        uint32_t *mask)
 {
 	const char *key = "priority";
-    struct lyd_node *iter;
-	uint32_t mask = 0;
+    const struct lyd_node *node;
+    const struct lyd_node *iter;
+	const char *nodename = NULL; 
 	uint32_t prio = 0;
+    sr_data_t *subtree = NULL;
+    char *xpath = NULL;
+    int rc = SR_ERR_OK;
+
+    if ((mask == NULL) || (strlen(ifname) == 0)) {
+        rc = SR_ERR_INVAL_ARG;
+        goto err;
+    }
+
+    rc = asprintf(&xpath,
+         "/ietf-interfaces:interfaces/interface[name='%s']/ieee802-dot1q-bridge:bridge-port/ieee802-dot1q-preemption-bridge:frame-preemption-parameters/frame-preemption-status-table",
+         ifname);
+    if (rc < 0) {
+        rc = SR_ERR_NO_MEMORY;
+        goto err;
+    }
+
+    rc = sr_get_subtree(session, xpath, 0, &subtree);
+    free(xpath);
+    if (rc) {
+        goto err;
+    }
+    node = subtree->tree;
 
 	LY_LIST_FOR(lyd_child(node), iter) {
-		const char *nodename = LYD_NAME(iter);
 
+		nodename = LYD_NAME(iter);
 		if (!strncmp(nodename, key, strlen(key))) {
 
 			/* get the priority number from the last character of the nodename */
 			prio = nodename[strlen(key)] - '0';
 			if (!strcmp(lyd_get_value(iter), "preemptable")) {
-				mask |= (1 << prio);
+				*mask |= (1 << prio);
 			}
 		}
 	}
-	return mask;
+    sr_release_data(subtree);
+    return SR_ERR_OK;
+
+err:
+    return rc;
 }
 
-static int config_frame_preemption(const char *ifname,
-								   const struct lyd_node *node,
-								   const uint32_t value)
+static int config_frame_preemption(const char *ifname, const uint32_t value)
 {
 #ifdef SYSREPO_TSN_TC
 	const char *cmd_enable = "ethtool --set-frame-preemption %s fp on preemptible-queues-mask 0x%02X min-frag-size %d";
@@ -63,12 +88,17 @@ static int config_frame_preemption(const char *ifname,
 	char cmd_buff[MAX_CMD_LEN];
 	int sysret = 0;
 
+    if (strlen(ifname) == 0) {
+		return SR_ERR_INVAL_ARG;
+    }
+
 	if (value != 0) {
 		snprintf(cmd_buff, sizeof(cmd_buff), cmd_enable, ifname, value, QBU_MIN_FRAG_SIZE);
 	} else {
 		snprintf(cmd_buff, sizeof(cmd_buff), cmd_disable, ifname);
 	}
 
+    LOG_DBG("Command: %s", cmd_buff);
 	sysret = system(cmd_buff);
 	if (!SYSCALL_OK(sysret)) {
 		return SR_ERR_INVAL_ARG;
@@ -91,110 +121,85 @@ static int config_frame_preemption(const char *ifname,
 #endif
 }
 
-static const struct lyd_node *is_path_include(const struct lyd_node *node,
-											  const char *node_name)
-{
-    const struct lyd_node *iter = NULL;
-
-	for (iter = node; iter; iter = lyd_parent(iter)) {
-		if (!strcmp(LYD_NAME(iter), node_name)) {
-			return iter;
-		}
-	}
-
-	return NULL;
-}
-
-static const char *get_ifname(const struct lyd_node *node)
-{
-    const struct lyd_node *target = NULL;
-    struct lyd_node *output = NULL;
-
-	target = is_path_include(node, "interface");
-
-	if (target && !lyd_find_path(target, "name", 0, &output) && output) {
-		return lyd_get_value(output);
-	} else {
-		return NULL;
-	}
-}
-
-static int check_and_add(const struct lyd_node **set, const struct lyd_node *node)
-{
-	const struct lyd_node **iter = set;
-
-	while (*iter) {
-		assert(((iter - set) / sizeof(*iter)) < NODE_SET_SIZE);
-		if (*iter == node) {
-			return -1;
-		}
-		iter++;
-	}
-	*iter = node;
-
-	return 0;
-}
+/*
+module: ietf-interfaces
+  +--rw interfaces
+     +--rw interface* [name]
+        +--rw dot1q:bridge-port
+           +--rw preempt-bridge:frame-preemption-parameters {frame-preemption}?
+              +--rw preempt-bridge:frame-preemption-status-table
+              |  +--rw preempt-bridge:priority0?   frame-preemption-status-enum
+              |  +--rw preempt-bridge:priority1?   frame-preemption-status-enum
+              |  +--rw preempt-bridge:priority2?   frame-preemption-status-enum
+              |  +--rw preempt-bridge:priority3?   frame-preemption-status-enum
+              |  +--rw preempt-bridge:priority4?   frame-preemption-status-enum
+              |  +--rw preempt-bridge:priority5?   frame-preemption-status-enum
+              |  +--rw preempt-bridge:priority6?   frame-preemption-status-enum
+              |  +--rw preempt-bridge:priority7?   frame-preemption-status-enum
+              +--ro preempt-bridge:hold-advance?                    uint32
+              +--ro preempt-bridge:release-advance?                 uint32
+              +--ro preempt-bridge:preemption-active?               boolean
+              +--ro preempt-bridge:hold-request?                    enumeration
+*/
 
 int qbu_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
                           const char *module_name, const char *path,
                           sr_event_t event, uint32_t request_id,
                           void *private_ctx)
 {
-	char xpath[XPATH_MAX_LEN] = {0};
 	sr_change_iter_t *iter = NULL;
     const struct lyd_node *node = NULL;
     sr_change_oper_t op;
 	int rc = SR_ERR_OK;
+    char *xpath;
+	char ifname[IF_NAME_MAX_LEN];
+	uint32_t mask = 0;
 
-	/* configure Qbu only when receiving the event SR_EV_DONE */
-	if (event != SR_EV_DONE)
-		return rc;
+    LOG_DBG("Qbu: start callback(%d): %s", (int)event, path);
 
-	snprintf(xpath, XPATH_MAX_LEN, "%s//.", QBU_PARA_XPATH);
+    rc = asprintf(&xpath, "%s//*", path);
+    if (rc < 0) {
+        return SR_ERR_CALLBACK_FAILED;
+    }
 
 	rc = sr_get_changes_iter(session, xpath, &iter);
+    free(xpath);
 	if (rc != SR_ERR_OK) {
+        sr_session_set_error_message(session, "Getting changes iter failed(%s).",
+                sr_strerror(rc));
 		return rc;
 	}
 
-    while ((rc = sr_get_change_tree_next(session, iter, &op, &node,
-					NULL, NULL, NULL)) == SR_ERR_OK) {
+    do {
+        rc = sr_get_change_tree_next(session, iter, &op, &node, NULL, NULL, NULL);
+        if (rc != SR_ERR_OK) {
+            break;
+        }
+        LOG_DBG("node name: %s, opt: %d", LYD_NAME(node), (int)op);
 
-		const struct lyd_node *set[NODE_SET_SIZE] = { 0 };
-		const struct lyd_node *target = NULL;
-		char *ifname = NULL;
-		uint32_t value = 0;
+        if (op == SR_OP_CREATED || op == SR_OP_MODIFIED) {
 
-		target = is_path_include(node, "frame-preemption-status-table");
-		if (target != NULL) {
+            ifname[0] = 0;
+            strncpy(&ifname[0], get_ifname(node), sizeof(ifname) - 1);
 
-			ifname = strdup(get_ifname(node));
-            if ((op == SR_OP_CREATED) || (op == SR_OP_MODIFIED)) {
+			rc = get_preemptible_queues_mask(session, ifname, &mask);
+            if (!rc) {
+			    rc = config_frame_preemption(ifname, mask);
+            }
+            break;
+        }
+    } while(1);
 
-				if (check_and_add(&set[0], target)) {
-					continue;
-				}
-				value = get_preemptible_queues_mask(node);
-				rc = config_frame_preemption(ifname, target, value);
-
-			} else if (op == SR_OP_DELETED) {
-				value = 0;
-				rc = config_frame_preemption(ifname, target, value);
-			}
-			free(ifname);
-
-			if (rc) {
-				char *__path = lyd_path(target, LYD_PATH_STD, NULL, 0);
-				sr_session_set_error_message(session,
-						"Failed to config frame preemption (Qbu): %s", __path);
-				free(__path);
-
-				rc = SR_ERR_UNSUPPORTED;
-				break;
-			}
-		}
-	}
     sr_free_change_iter(iter);
 
-	return rc;
+    if (rc != SR_ERR_OK && rc != SR_ERR_NOT_FOUND) {
+        sr_session_set_error_message(session, "Setting frame preemption parameters failed(%s).",
+                sr_strerror(rc));
+        LOG_ERR("Setting frame preemption parameters failed(%s).", sr_strerror(rc));
+		return SR_ERR_CALLBACK_FAILED;
+    }
+
+    LOG_DBG("Qbu: end callback(%d): %s", (int)event, path);
+
+    return SR_ERR_OK;
 }
