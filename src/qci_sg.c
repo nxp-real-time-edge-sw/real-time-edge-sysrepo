@@ -4,7 +4,7 @@
  * @brief Implementation of Stream Gate function based on sysrepo
  * datastore.
  *
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2020, 2025 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,13 +31,12 @@
 #include "main.h"
 #include "qci.h"
 
-#define CFG_CHANGE (QCIPSFP_NM ":config-change")
-#define ADMIN_CTR_LIST_LEN (QCIPSFP_NM ":admin-control-list-length")
-#define ADMIN_CT_EXT (QCIPSFP_NM ":admin-cycle-time-extension")
-#define GC_DUE_OCT_RX_EN (QCIPSFP_NM ":gate-closed-due-to-invalid-rx-enable")
-#define GC_DUE_OCT_RX (QCIPSFP_NM ":gate-closed-due-to-invalid-rx")
-#define GC_DUE_OCT_EX_EN (QCIPSFP_NM ":gate-closed-due-octets-exceeded-enable")
-#define GC_DUE_OCT_EX (QCIPSFP_NM ":gate-closed-due-octets-exceeded")
+#define CFG_CHANGE          "config-change"
+#define ADMIN_CT_EXT        "admin-cycle-time-extension"
+#define GC_DUE_OCT_RX_EN    "gate-closed-due-to-invalid-rx-enable"
+#define GC_DUE_OCT_RX       "gate-closed-due-to-invalid-rx"
+#define GC_DUE_OCT_EX_EN    "gate-closed-due-octets-exceeded-enable"
+#define GC_DUE_OCT_EX       "gate-closed-due-octets-exceeded"
 
 struct std_qci_list *sg_list_head;
 
@@ -66,8 +65,6 @@ void clr_qci_sg(sr_session_ctx_t *session, sr_val_t *value,
 		sgi->sgconf.admin.gate_states = false;
 	} else if (!strcmp(nodename, "admin-ipv")) {
 		sgi->sgconf.admin.init_ipv = -1;
-	} else if (!strcmp(nodename, ADMIN_CTR_LIST_LEN)) {
-		sgi->sgconf.admin.control_list_length = 0;
 	} else if (!strcmp(nodename, "gate-state-value")) {
 		sr_xpath_recover(&xp_ctx);
 		index = sr_xpath_key_value(value->xpath, "gate-control-entry",
@@ -688,8 +685,7 @@ int qci_sg_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 
     LOG_DBG("stream-gates: start callback(%d): %s", (int)event, path);
 
-	snprintf(xpath, XPATH_MAX_LEN, "%s%s//*", BRIDGE_COMPONENT_XPATH,
-		 QCISG_XPATH);
+    snprintf(xpath, XPATH_MAX_LEN, "%s//*", path);
 
 #ifdef SYSREPO_TSN_TC
 	stc_cfg_flag = true;

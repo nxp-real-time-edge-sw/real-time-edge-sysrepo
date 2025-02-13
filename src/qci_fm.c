@@ -4,7 +4,7 @@
  * @brief Implementation of Flow meter function based on sysrepo
  * datastore.
  *
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2020, 2025 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -470,8 +470,7 @@ int qci_fm_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 
     LOG_DBG("flow-meters: start callback(%d): %s", (int)event, path);
 
-	snprintf(xpath, XPATH_MAX_LEN, "%s%s//*", BRIDGE_COMPONENT_XPATH,
-		 QCIFM_XPATH);
+    snprintf(xpath, XPATH_MAX_LEN, "%s//*", path);
 
 #ifdef SYSREPO_TSN_TC
 	stc_cfg_flag = true;

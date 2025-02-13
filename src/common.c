@@ -3,7 +3,7 @@
  * @author Xiaolin He
  * @brief common functions for the project.
  *
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2020, 2025 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
 #include "common.h"
 
 static pthread_mutex_t tsn_mutex;
-static int output_log_level = LOG_LEVEL_WRN;
+static int output_log_level = LOG_LEVEL_INF;
 
 void init_tsn_mutex(void)
 {

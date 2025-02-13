@@ -4,7 +4,7 @@
  * @brief Implementation of Stream Filter function based on sysrepo
  * datastore.
  *
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2020, 2025 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,13 +55,13 @@ void clr_qci_sf(sr_session_ctx_t *session, sr_val_t *value,
 		sfi->sfconf.stream_handle_spec = -1;
 	} else if (!strcmp(nodename, "priority-spec")) {
 		sfi->sfconf.priority_spec = -1;
-	} else if (!strcmp(nodename, "stream-gate-ref")) {
-		sfi->sfconf.stream_gate_instance_id = 0;
 	} else if (!strcmp(nodename, "max-sdu-size")) {
 		sfi->sfconf.stream_filter.maximum_sdu_size = 0;
+	} else if (!strcmp(nodename, "stream-gate-ref")) {
+		sfi->sfconf.stream_gate_instance_id = 0;
 	} else if (!strcmp(nodename, "stream-blocked-due-to-oversize-frame-enabled")) {
 		sfi->sfconf.block_oversize_enable = 0;
-	} else if (!strcmp(nodename, "ieee802-dot1q-psfp:flow-meter-instance-id")) {
+	} else if (!strcmp(nodename, "flow-meter-ref")) {
 		sfi->sfconf.stream_filter.flow_meter_instance_id = -1;
 	}
 }
@@ -89,8 +89,6 @@ int parse_qci_sf(sr_session_ctx_t *session, sr_val_t *value,
 		sfi->sfconf.stream_handle_spec = value->data.int32_val;
 	} else if (!strcmp(nodename, "priority-spec")) {
 		pri2num(value->data.enum_val, &sfi->sfconf.priority_spec);
-	} else if (!strcmp(nodename, "stream-gate-ref")) {
-		sfi->sfconf.stream_gate_instance_id = value->data.uint32_val;
 	} else if (!strcmp(nodename, "max-sdu-size")) {
 		/* Only use parameters in the first list */
 		u32_val = value->data.uint32_val;
@@ -98,7 +96,9 @@ int parse_qci_sf(sr_session_ctx_t *session, sr_val_t *value,
 	} else if (!strcmp(nodename, "stream-blocked-due-to-oversize-frame-enabled")) {
 		/* Only use parameters in the first list */
 		sfi->sfconf.block_oversize_enable = value->data.bool_val;
-	} else if (!strcmp(nodename, "ieee802-dot1q-psfp:flow-meter-instance-id")) {
+	} else if (!strcmp(nodename, "stream-gate-ref")) {
+		sfi->sfconf.stream_gate_instance_id = value->data.uint32_val;
+	} else if (!strcmp(nodename, "flow-meter-ref")) {
 		u32_val = value->data.uint32_val;
 		sfi->sfconf.stream_filter.flow_meter_instance_id = u32_val;
 	}
@@ -124,7 +124,6 @@ int get_sf_per_port_per_id(sr_session_ctx_t *session, const char *path)
 	char sfid_bak[IF_NAME_MAX_LEN] = "unknown";
 
 	rc = sr_get_changes_iter(session, path, &it);
-
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
 		LOG_ERR("%s sr_get_changes_iter: %s\n", __func__, sr_strerror(rc));
@@ -388,8 +387,7 @@ int qci_sf_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	stc_cfg_flag = false;
 #endif
 
-	snprintf(xpath, XPATH_MAX_LEN, "%s%s//*", BRIDGE_COMPONENT_XPATH,
-		 QCISF_XPATH);
+    snprintf(xpath, XPATH_MAX_LEN, "%s//*", path);
 
 	rc = qci_sf_config(session, xpath, false);
 

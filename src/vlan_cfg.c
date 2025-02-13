@@ -3,7 +3,7 @@
  * @author hongbo wang
  * @brief Application to configure VLAN based on sysrepo datastore.
  *
- * Copyright 2020 NXP
+ * Copyright 2020, 2025 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,18 +26,19 @@ struct item_cfg {
 	bool vidflag;
 	uint32_t vid;
 	char ifname[IF_NAME_MAX_LEN];
+	char bridge_name[IF_NAME_MAX_LEN];
 };
 
 static struct item_cfg sitem_conf;
 
-static int set_inet_br_vlan(char *ifname, int vid, bool addflag)
+static int set_inet_br_vlan(char *ifname, char *bridge_name, int vid, bool addflag)
 {
 	char cmdstr[MAX_CMD_LEN];
 	int ret;
 
 	if (addflag)
-		snprintf(cmdstr, MAX_CMD_LEN, "bridge vlan add dev %s vid %d",
-			 ifname, vid);
+		snprintf(cmdstr, MAX_CMD_LEN, "ip link set dev %s master %s; bridge vlan add dev %s vid %d",
+			 ifname, bridge_name, ifname, vid);
 	else
 		snprintf(cmdstr, MAX_CMD_LEN, "bridge vlan del dev %s vid %d",
 			 ifname, vid);
@@ -169,6 +170,7 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 	int rc = SR_ERR_OK;
 	sr_change_oper_t oper;
 	char *vid = NULL;
+    char *bridge_name = NULL;
 	sr_val_t *value = NULL;
 	sr_val_t *old_value = NULL;
 	sr_val_t *new_value = NULL;
@@ -195,6 +197,11 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 			continue;
 
 		vid = sr_xpath_key_value(value->xpath, "vlan", "vid", &xp_ctx);
+
+		bridge_name = sr_xpath_key_value(value->xpath, "bridge", "name", &xp_ctx);
+        if (bridge_name) {
+            strncpy((char *)sitem_conf.bridge_name, bridge_name, IF_NAME_MAX_LEN - 1);
+        }
 
 		sr_free_val(old_value);
 		sr_free_val(new_value);
@@ -235,10 +242,10 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 
 	if (conf->delflag) {
 		conf->delflag = false;
-		ret = set_inet_br_vlan(conf->ifname, conf->vid, false);
+		ret = set_inet_br_vlan(conf->ifname, conf->bridge_name, conf->vid, false);
 		LOG_DBG("del vlan ifname:%s vid:%d", conf->ifname, conf->vid);
 	} else {
-		ret = set_inet_br_vlan(conf->ifname, conf->vid, true);
+		ret = set_inet_br_vlan(conf->ifname, conf->bridge_name, conf->vid, true);
 		LOG_DBG("add vlan ifname:%s vid:%d", conf->ifname, conf->vid);
 	}
 

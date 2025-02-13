@@ -3,7 +3,7 @@
  * @author hongbo wang
  * @brief Application to configure mac address based on sysrepo datastore.
  *
- * Copyright 2020 NXP
+ * Copyright 2020, 2025 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,131 +27,45 @@ struct item_cfg {
 };
 static struct item_cfg sitem_conf;
 
-#if 0
-static int get_inet_cfg(char *ifname, int req, void *buf, int len)
+static int set_inet_mac(const char *ifname, const char *mac_addr)
 {
-	int ret = 0;
-	int sockfd = 0;
-	struct ifreq ifr = {0};
-	struct sockaddr_in *sin = NULL;
+    char *command = NULL;
+    int rc;
+    const char *cmd_fmt = "ifname=%s; "
+                          "ip link add name ${ifname} type bridge; "
+                          "ip link set dev ${ifname} address %s; "
+                          "ip link set dev ${ifname} up";
 
-	if (!ifname || !buf)
-		return -1;
+    rc = asprintf(&command, cmd_fmt, ifname, mac_addr);
+    if (rc < 0) {
+		return SR_ERR_SYS;
+    }
 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0) {
-		LOG_ERR("create socket failed! ret:%d", sockfd);
-		return -2;
+    rc = system(command);
+	if (!SYSCALL_OK(rc)) {
+        LOG_DBG("Command failed: %s", command);
+        free(command);
+		return SR_ERR_INVAL_ARG;
 	}
 
-	memset(&ifr, 0, sizeof(ifr));
-	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
-
-	ret = ioctl(sockfd, req, &ifr);
-	close(sockfd);
-	if (ret < 0) {
-		LOG_ERR("ioctl error! ret:%d", ret);
-		return -3;
-	}
-
-	if (req == SIOCGIFHWADDR) {
-		memcpy(buf, &ifr.ifr_ifru.ifru_hwaddr.sa_data, len);
-	} else {
-		sin = (struct sockaddr_in *)&ifr.ifr_addr;
-		memcpy((struct in_addr *)buf, &sin->sin_addr, len);
-	}
-
-	return 0;
+    LOG_DBG("Command: %s", command);
+    free(command);
+    return SR_ERR_OK;
 }
 
-int get_inet_mac(char *ifname, uint8_t *buf, int len)
+static int set_config(struct item_cfg *conf)
 {
-	return get_inet_cfg(ifname, SIOCGIFHWADDR, buf, len);
-}
-#endif
+	if (!conf->valid)
+		return SR_ERR_INVAL_ARG;
 
-static int set_inet_cfg(char *ifname, int req, void *buf, int len)
-{
-	int ret = 0;
-	int sockfd = 0;
-	struct ifreq ifr = {0};
-	struct sockaddr_in *sin = NULL;
+    /* replace "-" with ":" in the MAC address */
+    for (int i = 0; i < strlen(conf->mac_addr); i++) {
+        if (conf->mac_addr[i] == '-') {
+            conf->mac_addr[i] = ':';
+        }
+    }
 
-	if (!ifname || !buf)
-		return -1;
-
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0) {
-		LOG_ERR("create socket failed! ret:%d", sockfd);
-		return -2;
-	}
-
-	memset(&ifr, 0, sizeof(ifr));
-	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
-
-	ret = ioctl(sockfd, SIOCGIFFLAGS, &ifr);
-	if (ret < 0) {
-		close(sockfd);
-		LOG_ERR("%s: can not find \"%s\"", __func__, ifname);
-		return -3;
-	}
-
-	if (req == SIOCSIFHWADDR) {
-		memcpy(&ifr.ifr_ifru.ifru_hwaddr.sa_data, buf, len);
-		ifr.ifr_addr.sa_family = ARPHRD_ETHER;
-	} else {
-		sin = (struct sockaddr_in *)&ifr.ifr_addr;
-		sin->sin_family = AF_INET;
-		memcpy(&sin->sin_addr, (struct in_addr *)buf, len);
-	}
-
-	ret = ioctl(sockfd, req, &ifr);
-	close(sockfd);
-	if (ret < 0) {
-		LOG_ERR("%s ioctl error! ret:%d", __func__, ret);
-		return -4;
-	}
-
-	return 0;
-}
-
-int set_inet_mac(char *ifname, uint8_t *buf, int len)
-{
-	return set_inet_cfg(ifname, SIOCSIFHWADDR, buf, len);
-}
-
-int convert_mac_address(char *str, uint8_t *pbuf, int buflen)
-{
-	int i = 0;
-	int ret = 0;
-	int len = 0;
-	int cnt = 0;
-	uint32_t data = 0;
-	char *pmac = NULL;
-	char buf[32] = {0};
-
-	if (!str || !pbuf)
-		return -1;
-
-	snprintf(buf, sizeof(buf), "%s", str);
-	pmac = buf;
-
-	len = strlen(buf);
-	for (i = 0; i < (len + 1); i++) {
-		if ((buf[i] == '-') || (buf[i] == ':') || (buf[i] == '\0')) {
-			buf[i] = '\0';
-			ret = sscanf(pmac, "%02X", &data);
-			if (ret != 1)
-				return -2;
-
-			if (cnt < buflen)
-				pbuf[cnt++] = data & 0xFF;
-
-			pmac = buf + i + 1;
-		}
-	}
-
-	return 0;
+	return set_inet_mac((char *)conf->ifname, (char *)conf->mac_addr);
 }
 
 static int parse_node(sr_session_ctx_t *session, sr_val_t *value,
@@ -285,32 +199,6 @@ cleanup:
 	return rc;
 }
 
-static int set_config(sr_session_ctx_t *session, bool abort)
-{
-	int ret = 0;
-	int rc = SR_ERR_OK;
-	uint8_t mac[IFHWADDRLEN];
-	struct item_cfg *conf = &sitem_conf;
-
-	if (abort) {
-		memset(conf, 0, sizeof(struct item_cfg));
-		return rc;
-	}
-
-	if (!conf->valid)
-		return rc;
-
-	/* config mac address */
-	convert_mac_address(conf->mac_addr, mac, sizeof(mac));
-	ret = set_inet_mac(conf->ifname, mac, sizeof(mac));
-	if (ret != 0)
-		return SR_ERR_INVAL_ARG;
-
-	LOG_DBG("set_inet_mac: ifname=%s mac=%s", conf->ifname, conf->mac_addr);
-
-	return rc;
-}
-
 int mac_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
                           const char *module_name, const char *path,
                           sr_event_t event, uint32_t request_id,
@@ -322,7 +210,7 @@ int mac_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 
 	rc = parse_config(session, path);
 	if (rc == SR_ERR_OK) {
-		rc = set_config(session, false);
+		rc = set_config(&sitem_conf);
 	}
 
     if (rc) {

@@ -3,7 +3,7 @@
  * @author Xiaolin He
  * @brief Application to configure TSN function based on sysrepo datastore.
  *
- * Copyright 2019-2024 NXP
+ * Copyright 2019-2025 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,10 +53,13 @@
         LOG_ERR("Failed to subscribe for \"%s\" (%s).",	                    \
                 xpath, sr_strerror(rc));									\
     } else {                                                                \
-        LOG_DBG("Subscribed for %s", xpath);                                \
+        LOG_INF("Subscribed for %s", xpath);                                \
     }
 
-static volatile uint32_t exit_application;
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
+static volatile uint32_t exit_application = 0;
 
 static int open_pid_file(const char *pid_file)
 {
@@ -105,7 +108,18 @@ static int write_pid_file(int pidfd)
 
 static void signal_handler(int signum)
 {
-	exit_application = 1;
+    pthread_mutex_lock(&lock);
+
+    if (!exit_application) {
+
+	    exit_application = 1;
+        pthread_cond_signal(&cond);
+    } else {
+        LOG_ERR("Exit by force.");
+        exit(EXIT_FAILURE);
+    }
+
+    pthread_mutex_unlock(&lock);
 }
 
 static void handle_signals(void)
@@ -134,10 +148,11 @@ static void handle_signals(void)
 
 static void print_usage(char *name)
 {
-    printf("Usage: %s [-dh]\n", name);
-    printf("Options:\n");
-    printf(" -d         Debug mode (do not daemonize and print verbose messages.).\n");
-    printf(" -h         Display help.\n");
+    printf("Usage: %s [-dhv]\r\n", name);
+    printf("Options:\r\n");
+    printf(" -d         Do not daemonize.\r\n");
+    printf(" -v<level>  Change verbosity to a level (1:error, 2:warning, 3:info, 4:debug). 4 by default.\r\n");
+    printf(" -h         Display help.\r\n");
 }
 
 int main(int argc, char **argv)
@@ -153,16 +168,24 @@ int main(int argc, char **argv)
     char *pid_file = "/var/run/sysrepo-tsn.pid";
     int pid_fd = -1;
     int opt;
+    int log_level;
 
 	exit_application = 0;
 
-    while ((opt = getopt(argc, argv, "dh")) != -1) {
+    while ((opt = getopt(argc, argv, "dhv::")) != -1) {
 
         switch (opt) {
         case 'd':
 		    daemonize = 0;
-            log_set_output_level(LOG_LEVEL_DBG);
-		    LOG_DBG("Enter Debug Mode!");
+            break;
+        case 'v':
+            log_level = LOG_LEVEL_DBG;
+            if (optarg) {
+                log_level = atoi(optarg);
+                log_level = (log_level >= 1) && (log_level <= 4) ?
+                                            log_level - 1 : LOG_LEVEL_DBG;
+            }
+            log_set_output_level(log_level);
             break;
         case 'h':
             print_usage(argv[0]);
@@ -174,6 +197,7 @@ int main(int argc, char **argv)
 
 	/* daemonize */
 	if (daemonize == 1) {
+        LOG_INF("Enter daemon mode.");
 		if (daemon(0, 0) != 0) {
 			LOG_ERR("Daemonizing sysrepo-tsn failed (%s)", strerror(errno));
 			return EXIT_FAILURE;
@@ -273,9 +297,11 @@ int main(int argc, char **argv)
     sd_notify(0, "READY=1");
 #endif
 
+    pthread_mutex_lock(&lock);
 	while (!exit_application) {
-		sleep(1);
+        pthread_cond_wait(&cond, &lock);
     }
+    pthread_mutex_unlock(&lock);
 
 #ifdef RT_HAVE_SYSTEMD
     /* notify systemd */
