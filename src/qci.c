@@ -4,7 +4,7 @@
  * @brief Implementation of Qci function based on sysrepo
  * datastore.
  *
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2020, 2025 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

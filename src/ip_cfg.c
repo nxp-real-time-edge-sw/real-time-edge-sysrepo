@@ -3,7 +3,7 @@
  * @author hongbo wang
  * @brief Application to configure IP address based on sysrepo datastore.
  *
- * Copyright 2020-2024 NXP
+ * Copyright 2020-2025 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

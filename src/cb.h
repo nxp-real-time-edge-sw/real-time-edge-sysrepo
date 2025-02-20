@@ -3,7 +3,7 @@
  * @author shang gao
  * @brief header file for cb.c.
  *
- * Copyright 2021 NXP
+ * Copyright 2021, 2025 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
