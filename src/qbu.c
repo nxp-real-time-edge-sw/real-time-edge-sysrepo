@@ -176,6 +176,11 @@ int qbu_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
         }
         LOG_DBG("node name: %s, opt: %d", LYD_NAME(node), (int)op);
 
+        /* skip the new created node with the default value */
+        if ((op == SR_OP_CREATED) && (node->flags & LYD_DEFAULT)) {
+            continue;
+        }
+
         if (op == SR_OP_CREATED || op == SR_OP_MODIFIED) {
 
             ifname[0] = 0;

@@ -136,6 +136,13 @@ int get_sf_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!value)
 			continue;
 
+        LOG_DBG("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
+
+        /* skip the new created node with the default value */
+        if (new_value && (oper == SR_OP_CREATED) && new_value->dflt) {
+            continue;
+        }
+
 		sf_id = sr_xpath_key_value(value->xpath,
 					    "stream-filter-instance-table",
 					    "stream-filter-instance-id",

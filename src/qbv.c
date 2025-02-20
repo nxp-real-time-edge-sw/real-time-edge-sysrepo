@@ -3,7 +3,7 @@
  * @author Xiaolin He
  * @brief Application to configure TSN-QBV function based on sysrepo datastore.
  *
- * Copyright 2019-2020, 2022-2023 NXP
+ * Copyright 2019-2020, 2022-2023, 2025 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -510,10 +510,18 @@ int qbv_config(sr_session_ctx_t *session, const char *path, bool abort)
 
 	while (SR_ERR_OK == (rc = sr_get_change_next(session, it,
 					&oper, &old_value, &new_value))) {
+
 		value = new_value ? new_value : old_value;
 		ifname = sr_xpath_key_value(value->xpath, "interface", "name", &xp_ctx);
 		if (!ifname)
 			continue;
+
+        LOG_DBG("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
+
+        /* skip the new created node with the default value */
+        if (new_value && (oper == SR_OP_CREATED) && new_value->dflt) {
+            continue;
+        }
 
 		if (strcmp(ifname, ifname_bak)) {
 			snprintf(ifname_bak, IF_NAME_MAX_LEN, "%s", ifname);

@@ -46,8 +46,8 @@
 #include <systemd/sd-daemon.h>
 #endif
 
-#define SR_CONFIG_SUBSCR(mod_name, xpath, cb)								\
-    rc = sr_module_change_subscribe(session, mod_name, xpath, cb, NULL, 0, 	\
+#define SR_CONFIG_SUBSCR(mod_name, xpath, cb, prio)							\
+    rc = sr_module_change_subscribe(session, mod_name, xpath, cb, NULL, prio, 	\
            	SR_SUBSCR_DONE_ONLY, &subscription);		                    \
     if (rc != SR_ERR_OK) {													\
         LOG_ERR("Failed to subscribe for \"%s\" (%s).",	                    \
@@ -242,51 +242,51 @@ int main(int argc, char **argv)
 
     /* Subscribe to the ipv4 subtree */
     xpath = "/ietf-interfaces:interfaces/interface/ietf-ip:ipv4";
-    SR_CONFIG_SUBSCR(mod_name, xpath, ip_subtree_change_cb);
+    SR_CONFIG_SUBSCR(mod_name, xpath, ip_subtree_change_cb, 1);
 
     /* Subscribe to QBU subtree */
 	xpath = QBU_PARA_XPATH;
-    SR_CONFIG_SUBSCR(mod_name, xpath, qbu_subtree_change_cb);
+    SR_CONFIG_SUBSCR(mod_name, xpath, qbu_subtree_change_cb, 0);
 
 	/* Subscribe to QBV subtree */
 	xpath = QBV_GATE_PARA_XPATH;
-    SR_CONFIG_SUBSCR(mod_name, xpath, qbv_subtree_change_cb);
+    SR_CONFIG_SUBSCR(mod_name, xpath, qbv_subtree_change_cb, 0);
 
     mod_name = "ieee802-dot1q-bridge";
 
     /* Subscribe to QCI-Stream-Filter subtree */
     xpath = "/ieee802-dot1q-bridge:bridges/bridge/component/ieee802-dot1q-psfp-bridge:stream-filters";
-    SR_CONFIG_SUBSCR(mod_name, xpath, qci_sf_subtree_change_cb);
+    SR_CONFIG_SUBSCR(mod_name, xpath, qci_sf_subtree_change_cb, 0);
 
     /* Subscribe to QCI-Stream-Gate subtree */
     xpath = "/ieee802-dot1q-bridge:bridges/bridge/component/ieee802-dot1q-psfp-bridge:stream-gates";
-    SR_CONFIG_SUBSCR(mod_name, xpath, qci_sg_subtree_change_cb);
+    SR_CONFIG_SUBSCR(mod_name, xpath, qci_sg_subtree_change_cb, 0);
 
     /* Subscribe to QCI-Flow-Meter subtree */
     xpath = "/ieee802-dot1q-bridge:bridges/bridge/component/ieee802-dot1q-psfp-bridge:flow-meters";
-    SR_CONFIG_SUBSCR(mod_name, xpath, qci_fm_subtree_change_cb);
+    SR_CONFIG_SUBSCR(mod_name, xpath, qci_fm_subtree_change_cb, 0);
 
     /* Subscribe to VLAN_CFG subtree */
     xpath = "/ieee802-dot1q-bridge:bridges/bridge/component/bridge-vlan";
-    SR_CONFIG_SUBSCR(mod_name, xpath, vlan_subtree_change_cb);
+    SR_CONFIG_SUBSCR(mod_name, xpath, vlan_subtree_change_cb, 1);
 
     /* Subscribe to MAC_CFG subtree */
     xpath = "/ieee802-dot1q-bridge:bridges/bridge/address";
-    SR_CONFIG_SUBSCR(mod_name, xpath, mac_subtree_change_cb);
+    SR_CONFIG_SUBSCR(mod_name, xpath, mac_subtree_change_cb, 2);
 
     /* Subscribe to BR_TC_CFG subtree */
     xpath = "/ieee802-dot1q-bridge:bridges/bridge/component/nxp-bridge-vlan-tc-flower:traffic-control";
-    SR_CONFIG_SUBSCR(mod_name, xpath, brtc_subtree_change_cb);
+    SR_CONFIG_SUBSCR(mod_name, xpath, brtc_subtree_change_cb, 0);
 
     mod_name = "ieee802-dot1cb-stream-identification";
     /* Subscribe to CB-StreamID subtree */
     xpath = "/ieee802-dot1cb-stream-identification:stream-identity";
-    SR_CONFIG_SUBSCR(mod_name, xpath, cb_streamid_subtree_change_cb);
+    SR_CONFIG_SUBSCR(mod_name, xpath, cb_streamid_subtree_change_cb, 0);
 
     mod_name = "ieee802-dot1cb-frer";
     /* Subscribe to CB */
     xpath = "/ieee802-dot1cb-frer:frer";
-    SR_CONFIG_SUBSCR(mod_name, xpath, cb_subtree_change_cb);
+    SR_CONFIG_SUBSCR(mod_name, xpath, cb_subtree_change_cb, 0);
 
 	if (write_pid_file(pid_fd) < 0) {
         goto cleanup;
