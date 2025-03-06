@@ -41,6 +41,7 @@
 #include "mac_cfg.h"
 #include "brtc_cfg.h"
 #include "cb.h"
+#include "lldp.h"
 
 #ifdef RT_HAVE_SYSTEMD
 #include <systemd/sd-daemon.h>
@@ -287,6 +288,8 @@ int main(int argc, char **argv)
     /* Subscribe to CB */
     xpath = "/ieee802-dot1cb-frer:frer";
     SR_CONFIG_SUBSCR(mod_name, xpath, cb_subtree_change_cb, 0);
+
+    lldp_module_init(session, &subscription);
 
 	if (write_pid_file(pid_fd) < 0) {
         goto cleanup;

@@ -85,6 +85,7 @@ set(SOURCES
 		src/mac_cfg.c
 		src/cb.c
 		src/vlan_cfg.c
+		src/lldp.c
 		src/file_mon.c)
 
 find_package(PkgConfig)

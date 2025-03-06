@@ -36,6 +36,9 @@ MODULES=(
 "ieee802-dot1q-stream-filters-gates-bridge@2023-07-03.yang"
 "ietf-system@2014-08-06.yang -e authentication -e local-users"
 "nxp-bridge-vlan-tc-flower@2020-04-02.yang"
+"ieee802-dot1ab-types@2022-03-15.yang"
+"ietf-routing@2018-03-13.yang"
+"ieee802-dot1ab-lldp@2022-03-15.yang"
 )
 
 CMD_INSTALL=

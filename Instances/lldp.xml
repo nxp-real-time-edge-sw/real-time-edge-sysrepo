@@ -1,0 +1,5 @@
+<lldp xmlns="urn:ieee:std:802.1AB:yang:ieee802-dot1ab-lldp">
+    <message-tx-hold-multiplier>5</message-tx-hold-multiplier>
+    <message-tx-interval>13</message-tx-interval>
+</lldp>
+
