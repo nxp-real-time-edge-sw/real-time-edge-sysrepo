@@ -14,6 +14,13 @@
             <psfp-bridge:flow-meter-instance-table nc:operation="replace">
                 <psfp-bridge:flow-meter-instance-id>1</psfp-bridge:flow-meter-instance-id>
                 <qci-augment:flow-meter-enabled>false</qci-augment:flow-meter-enabled>
+                <psfp-bridge:committed-information-rate>500000000</psfp-bridge:committed-information-rate>
+                <psfp-bridge:committed-burst-size>1500</psfp-bridge:committed-burst-size>
+                <psfp-bridge:excess-information-rate>500000000</psfp-bridge:excess-information-rate>
+                <psfp-bridge:excess-burst-size>1500</psfp-bridge:excess-burst-size>
+                <psfp-bridge:coupling-flag>one</psfp-bridge:coupling-flag>
+                <psfp-bridge:color-mode>color-aware</psfp-bridge:color-mode>
+                <psfp-bridge:drop-on-yellow>false</psfp-bridge:drop-on-yellow>
             </psfp-bridge:flow-meter-instance-table>
             <psfp-bridge:max-flow-meter-instances>64</psfp-bridge:max-flow-meter-instances>
         </psfp-bridge:flow-meters>

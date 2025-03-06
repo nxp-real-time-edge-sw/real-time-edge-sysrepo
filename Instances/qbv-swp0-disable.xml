@@ -13,7 +13,7 @@
                 <sched-bridge:traffic-class>0</sched-bridge:traffic-class>
                 <sched-bridge:queue-max-sdu>1024</sched-bridge:queue-max-sdu>
             </sched-bridge:queue-max-sdu-table>
-            <sched-bridge:gate-enabled>true</sched-bridge:gate-enabled>
+            <sched-bridge:gate-enabled>false</sched-bridge:gate-enabled>
             <sched-bridge:admin-gate-states>127</sched-bridge:admin-gate-states>
             <sched-bridge:admin-control-list>
                 <sched-bridge:gate-control-entry nc:operation="delete">
