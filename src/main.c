@@ -42,6 +42,7 @@
 #include "brtc_cfg.h"
 #include "cb.h"
 #include "lldp.h"
+#include "ptp.h"
 
 #ifdef RT_HAVE_SYSTEMD
 #include <systemd/sd-daemon.h>
@@ -54,7 +55,7 @@
         LOG_ERR("Failed to subscribe for \"%s\" (%s).",	                    \
                 xpath, sr_strerror(rc));									\
     } else {                                                                \
-        LOG_INF("Subscribed for %s", xpath);                                \
+        LOG_INF("Subscribed changes for %s", xpath);                        \
     }
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -290,6 +291,8 @@ int main(int argc, char **argv)
     SR_CONFIG_SUBSCR(mod_name, xpath, cb_subtree_change_cb, 0);
 
     lldp_module_init(session, &subscription);
+
+    ptp_module_init(session, &subscription);
 
 	if (write_pid_file(pid_fd) < 0) {
         goto cleanup;

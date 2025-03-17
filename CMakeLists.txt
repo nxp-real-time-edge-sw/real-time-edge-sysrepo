@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(sysrepo-tsn C)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-format-truncation")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-format-truncation -Wno-unused-result")
 
 # include custom Modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
@@ -86,6 +86,7 @@ set(SOURCES
 		src/cb.c
 		src/vlan_cfg.c
 		src/lldp.c
+		src/ptp.c
 		src/file_mon.c)
 
 find_package(PkgConfig)

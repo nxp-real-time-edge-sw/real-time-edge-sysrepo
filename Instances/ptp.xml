@@ -1,0 +1,37 @@
+<ptp xmlns="urn:ieee:std:1588:yang:ieee1588-ptp-tt"
+    xmlns:dot1as-gptp="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp">
+<instances>
+    <instance>
+        <instance-index>0</instance-index>
+        <default-ds>
+            <priority1>248</priority1>
+            <priority2>248</priority2>
+            <domain-number>1</domain-number>
+            <time-receiver-only>false</time-receiver-only>
+        </default-ds>
+        <parent-ds>
+            <protocol-address>
+                <network-protocol>ieee802-3</network-protocol>
+                <address-length>6</address-length>
+                <address-field>01-80-C2-00-00-0E</address-field>
+            </protocol-address>
+        </parent-ds>
+        <path-trace-ds>
+            <enable>true</enable>
+        </path-trace-ds>
+        <ports>
+            <port>
+                <port-index>0</port-index>
+                <port-ds>
+                    <log-announce-interval>0</log-announce-interval>
+                    <log-sync-interval>-3</log-sync-interval>
+                    <delay-mechanism>p2p</delay-mechanism>
+                    <dot1as-gptp:sync-receipt-timeout>3</dot1as-gptp:sync-receipt-timeout>
+                    <dot1as-gptp:mean-link-delay-thresh>20000000</dot1as-gptp:mean-link-delay-thresh>
+                </port-ds>
+            </port>
+        </ports>
+    </instance>
+</instances>
+</ptp>
+
