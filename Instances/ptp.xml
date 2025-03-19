@@ -6,8 +6,7 @@
         <default-ds>
             <priority1>248</priority1>
             <priority2>248</priority2>
-            <domain-number>1</domain-number>
-            <time-receiver-only>false</time-receiver-only>
+            <domain-number>0</domain-number>
         </default-ds>
         <parent-ds>
             <protocol-address>

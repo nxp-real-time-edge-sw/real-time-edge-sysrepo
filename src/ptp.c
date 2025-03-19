@@ -101,30 +101,25 @@ static int ptp_change_subscribe_cb(sr_session_ctx_t *session, uint32_t sub_id,
         fprintf(fptr, "domainNumber %8s\n", lyd_get_value(match));
     }
 
-    lyret = lyd_find_path(instance, "default-ds/time-receiver-only", 0, &match);
-    if (!lyret && !strcmp(lyd_get_value(match), "true")) {
-        fprintf(fptr, "domainNumber %8d\n", 1);
-    }
-
     lyret = lyd_find_path(instance, "parent-ds/protocol-address/network-protocol", 0, &match);
     if (!lyret) {
-        if (!strcmp(lyd_get_value(match), "ieee802-3")) {
+        if (!strcmp(lyd_get_value(match), "ieee1588-ptp-tt:ieee802-3")) {
             fprintf(fptr, "network_transport %8s\n", "L2");
-        }
 
-        lyret = lyd_find_path(instance, "parent-ds/protocol-address/address-field", 0, &match);
-        if (!lyret) {
-            char *mac = strdup(lyd_get_value(match));
-            char *ptr = mac;
+            lyret = lyd_find_path(instance, "parent-ds/protocol-address/address-field", 0, &match);
+            if (!lyret) {
+                char *mac = strdup(lyd_get_value(match));
+                char *ptr = mac;
 
-            while (*ptr != 0) {
-                if (*ptr == '-') {
-                    *ptr = ':';
+                while (*ptr != 0) {
+                    if (*ptr == '-') {
+                        *ptr = ':';
+                    }
+                    ptr++;
                 }
-                ptr++;
+                fprintf(fptr, "ptp_dst_mac    %s\n", mac);
+                free(mac);
             }
-            fprintf(fptr, "ptp_dst_mac    %s\n", mac);
-            free(mac);
         }
     }
 
