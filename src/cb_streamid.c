@@ -265,6 +265,33 @@ void clr_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 	}
 }
 
+static char *dup_node_name(const char *node)
+{
+	const char *start;
+	const char *ptr;
+	char *buffer;
+	size_t size;
+
+	ptr = strrchr(node, ':');
+	if (ptr == NULL) {
+		start = node;
+	} else {
+		start = ptr + 1;
+	}
+
+	ptr = strchr(node, '[');
+	if (ptr == NULL) {
+		size = strlen(start);
+	} else {
+		size = ptr - start;
+	}
+
+	buffer = malloc(size + 1);
+	strncpy(buffer, start, size);
+    buffer[size] = 0;
+	return buffer;
+}
+
 /************************************************************************
  *
  * Get items' values from datastore.
@@ -279,18 +306,22 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 	uint8_t u8_val = 0;
 	uint16_t u16_val = 0;
 	uint64_t u64_val = 0;
+	char *node;
 	char *nodename;
 	char *num_str;
 	char err_msg[MSG_MAX_LEN] = {0};
-	int port;
+	int port = 0;
 
 	sr_xpath_recover(&xp_ctx);
-	nodename = sr_xpath_node_name(value->xpath);
-	if (!nodename)
+	node = sr_xpath_node_name(value->xpath);
+	if (!node) {
 		goto out;
+    }
 
+	nodename = dup_node_name(node);
 	stream->enable = 1;
 	para->enable = 1;
+
 	if (!strcmp(nodename, "handle")) {
 		stream->cbconf.handle = value->data.uint32_val;
 	} else if (!strcmp(nodename, "input-port")) {
@@ -434,6 +465,7 @@ int parse_cb_streamid(sr_session_ctx_t *session, sr_val_t *value,
 		para->dport = value->data.uint16_val;
 	}
 
+	free(nodename);
 	para->set_flag = true;
 
 out:
@@ -634,12 +666,16 @@ out:
 	return rc;
 }
 
-void print_streamid_config(struct tsn_cb_streamid *sid)
+void print_streamid_config(struct std_cb_stream *stream)
 {
-    LOG_DBG("tsn_cb_streamid: handle=%d, ifac_oport=%d, ofac_oport=%d, \
-            ifac_iport=%d, ofac_iport=%d, type=%d",
-            sid->handle, sid->ifac_oport, sid->ofac_oport,
-            sid->ifac_iport, sid->ofac_iport, sid->type);
+	struct tsn_cb_streamid *cbconf = &stream->cbconf;
+
+	LOG_DBG("stream-identity: port=%s, index=%d, handle=%d",
+			stream->port, stream->index, cbconf->handle);
+	LOG_DBG("  in-facing:  input-port=%d, output-port=%d",
+			cbconf->ifac_iport, cbconf->ifac_oport);
+	LOG_DBG("  out-facing: input-port=%d, output-port=%d",
+			cbconf->ofac_iport, cbconf->ofac_oport);
 }
 
 int config_streamid(sr_session_ctx_t *session)
@@ -649,12 +685,14 @@ int config_streamid(sr_session_ctx_t *session)
 
 	if (!stc_cfg_flag)
 		init_tsn_socket();
+
+	if (!cur_node->stream_ptr->enable) {
+		rc = SR_ERR_INVAL_ARG;
+		goto cleanup;
+	}
+
 	while (cur_node) {
-        LOG_DBG("config_streamid: port-name=%s, stream-id-handle=%d, enable=%d", 
-                cur_node->stream_ptr->port,
-				cur_node->stream_ptr->index,
-				(int)cur_node->stream_ptr->enable);
-        print_streamid_config(&(cur_node->stream_ptr->cbconf));
+		print_streamid_config(cur_node->stream_ptr);
 
 		/* set new flow meter configuration */
 		rc = tsn_cb_streamid_set(cur_node->stream_ptr->port,
