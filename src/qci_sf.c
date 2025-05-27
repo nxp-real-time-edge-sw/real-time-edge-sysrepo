@@ -19,6 +19,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "qci_sf"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,7 +30,6 @@
 #include <cjson/cJSON.h>
 
 #include "common.h"
-#include "main.h"
 #include "qci.h"
 
 struct std_qci_list *sf_list_head;
@@ -136,7 +137,7 @@ int get_sf_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!value)
 			continue;
 
-        LOG_DBG("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
+        LOG_INF("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
 
         /* skip the new created node with the default value */
         if (new_value && (oper == SR_OP_CREATED) && new_value->dflt) {
@@ -304,7 +305,7 @@ out:
 
 static void print_sf_config(struct tsn_qci_psfp_sfi_conf *sfi)
 {
-    LOG_DBG("tsn_qci_psfp_sfi_conf: stream_handle_spec=%d, \
+    LOG_INF("tsn_qci_psfp_sfi_conf: stream_handle_spec=%d, \
             priority_spec=%d, stream_gate_instance_id=%d, \
             stream_filter.maximum_sdu_size=%d, \
             stream_filter.flow_meter_instance_id=%d, \
@@ -325,7 +326,7 @@ int config_sf(sr_session_ctx_t *session)
 	if (!stc_cfg_flag)
 		init_tsn_socket();
 	while (cur_node) {
-        LOG_DBG("config_sf: port-name=%s, stream-filter-handle=%d, enable=%d",
+        LOG_INF("config_sf: port-name=%s, stream-filter-handle=%d, enable=%d",
                 cur_node->sf_ptr->port, cur_node->sf_ptr->sf_id,
 			    (int)cur_node->sf_ptr->enable);
         print_sf_config(&(cur_node->sf_ptr->sfconf));
@@ -386,7 +387,7 @@ int qci_sf_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0,};
 
-    LOG_DBG("stream-filters: start callback(%d): %s", (int)event, path);
+    LOG_INF("stream-filters: start callback(%d): %s", (int)event, path);
 
 #ifdef SYSREPO_TSN_TC
 	stc_cfg_flag = true;

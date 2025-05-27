@@ -19,6 +19,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "qci_fm"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,7 +30,6 @@
 #include <cjson/cJSON.h>
 
 #include "common.h"
-#include "main.h"
 #include "qci.h"
 
 struct std_qci_list *fm_list_head;
@@ -186,7 +187,7 @@ int get_fm_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!value)
 			continue;
 
-        LOG_DBG("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
+        LOG_INF("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
 
         /* skip the new created node with the default value */
         if (new_value && (oper == SR_OP_CREATED) && new_value->dflt) {
@@ -357,7 +358,7 @@ out:
 
 void print_fm_config(struct tsn_qci_psfp_fmi *fmiconf)
 {
-    LOG_DBG("tsn_qci_psfp_fmi: cir=%d, cbs=%d, eir=%d, ebs=%d, cf=%d, cm=%d, \
+    LOG_INF("tsn_qci_psfp_fmi: cir=%d, cbs=%d, eir=%d, ebs=%d, cf=%d, cm=%d, \
             drop_on_yellow=%d, mark_red_enable=%d, mark_red=%d",
             fmiconf->cir, fmiconf->cbs, fmiconf->eir,
             fmiconf->ebs, fmiconf->cf, fmiconf->cm,
@@ -373,7 +374,7 @@ int config_fm(sr_session_ctx_t *session)
 		init_tsn_socket();
 	while (cur_node) {
 
-        LOG_DBG("config_fm: port-name=%s, flow-meters-handle=%d, enable=%d",
+        LOG_INF("config_fm: port-name=%s, flow-meters-handle=%d, enable=%d",
                 cur_node->fm_ptr->port, cur_node->fm_ptr->fm_id,
                 cur_node->fm_ptr->enable);
         print_fm_config(&(cur_node->fm_ptr->fmconf));
@@ -475,7 +476,7 @@ int qci_fm_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0,};
 
-    LOG_DBG("flow-meters: start callback(%d): %s", (int)event, path);
+    LOG_INF("flow-meters: start callback(%d): %s", (int)event, path);
 
     snprintf(xpath, XPATH_MAX_LEN, "%s//*", path);
 

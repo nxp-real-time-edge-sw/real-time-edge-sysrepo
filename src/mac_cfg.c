@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "mac_cfg"
+
 #include "mac_cfg.h"
 
 struct item_cfg {
@@ -43,12 +45,12 @@ static int set_inet_mac(const char *ifname, const char *mac_addr)
 
     rc = system(command);
 	if (!SYSCALL_OK(rc)) {
-        LOG_DBG("Command failed: %s", command);
+        LOG_ERR("Command failed: %s", command);
         free(command);
 		return SR_ERR_INVAL_ARG;
 	}
 
-    LOG_DBG("Command: %s", command);
+    LOG_INF("Command: %s", command);
     free(command);
     return SR_ERR_OK;
 }
@@ -206,7 +208,7 @@ int mac_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 {
 	int rc = SR_ERR_OK;
 
-    LOG_DBG("bridge/address: start callback(%d): %s", (int)event, path);
+    LOG_INF("bridge/address: start callback(%d): %s", (int)event, path);
 
 	rc = parse_config(session, path);
 	if (rc == SR_ERR_OK) {

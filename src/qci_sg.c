@@ -19,6 +19,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "qci_sg"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,7 +30,6 @@
 #include <cjson/cJSON.h>
 
 #include "common.h"
-#include "main.h"
 #include "qci.h"
 
 #define CFG_CHANGE          "config-change"
@@ -316,7 +317,7 @@ int get_sg_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!value)
 			continue;
 
-        LOG_DBG("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
+        LOG_INF("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
 
         /* skip the new created node with the default value */
         if (new_value && (oper == SR_OP_CREATED) && new_value->dflt) {
@@ -489,7 +490,7 @@ out:
 
 void print_sg_config(struct tsn_qci_psfp_sgi_conf *sgi)
 {
-    LOG_DBG("tsn_qci_psfp_sgi_conf: gate_enabled=%d, config_change=%d, \
+    LOG_INF("tsn_qci_psfp_sgi_conf: gate_enabled=%d, config_change=%d, \
             admin.gate_states=%d, admin.control_list_length=%d, \
             admin.cycle_time=%d, admin.cycle_time_extension=%d, \
             admin.base_time=%d, admin.init_ipv=%d, \
@@ -527,7 +528,7 @@ int config_sg(sr_session_ctx_t *session)
 			sgi->admin.cycle_time = time;
 		}
 
-        LOG_DBG("config_sg: port-name=%s, stream-gate-handle=%d, enable=%d",
+        LOG_INF("config_sg: port-name=%s, stream-gate-handle=%d, enable=%d",
                 cur_node->sg_ptr->port, cur_node->sg_ptr->sg_handle,
                 (int)cur_node->sg_ptr->enable);
         print_sg_config(sgi);
@@ -690,7 +691,7 @@ int qci_sg_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0,};
 
-    LOG_DBG("stream-gates: start callback(%d): %s", (int)event, path);
+    LOG_INF("stream-gates: start callback(%d): %s", (int)event, path);
 
     snprintf(xpath, XPATH_MAX_LEN, "%s//*", path);
 

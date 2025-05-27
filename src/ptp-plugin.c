@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "ptp"
+
 #include <sysrepo.h>
 
 #include "common.h"
@@ -26,6 +28,7 @@
 
 #define PTP_BUFFER_SIZE     (16 * 1024U)
 
+static sr_subscription_ctx_t *subscription = NULL;
 
 /* Add extra parameters undefined in YANG model */
 static void ptp_add_extra_config(FILE *fptr)
@@ -53,7 +56,7 @@ static int ptp_change_subscribe_cb(sr_session_ctx_t *session, uint32_t sub_id,
     char *xpath;
     FILE *fptr;
 
-    LOG_DBG("ptp: start callback(%d): %s", (int)event, path);
+    LOG_INF("start callback(%d): %s", (int)event, path);
 
     rc = asprintf(&xpath, PTP_INSTANCES_PATH "/*");
     if (rc < 0) {
@@ -166,21 +169,31 @@ error:
     return rc;
 }
 
-int ptp_module_init(sr_session_ctx_t *session, sr_subscription_ctx_t **subscription)
+int sr_plugin_init_cb(sr_session_ctx_t *session, void **private_data)
 {
     char *xpath = PTP_ROOT_PATH;
     int rc = 0;
 
     rc = sr_module_change_subscribe(session, MODULE_NAME_PTP, xpath,
                                     ptp_change_subscribe_cb, NULL, 0,
-                                    SR_SUBSCR_DONE_ONLY, subscription);
+                                    SR_SUBSCR_DONE_ONLY, &subscription);
     if (rc != SR_ERR_OK) {
-        LOG_ERR("Failed to subscribe for \"%s\" (%s).", xpath, sr_strerror(rc));
+        LOG_ERR("Failed to subscribe for \"%s\" (%s).",
+                xpath, sr_strerror(rc));
         goto error;
     }
     LOG_INF("Subscribed changes for %s", xpath);
 
     return SR_ERR_OK;
+
 error:
-    return SR_ERR_UNSUPPORTED;
+    sr_unsubscribe(subscription);
+    return rc;
+}
+
+void sr_plugin_cleanup_cb(sr_session_ctx_t *running_session, void *private_data)
+{
+	sr_unsubscribe(subscription);
+
+    LOG_INF("PTP plugin cleanup finished.");
 }

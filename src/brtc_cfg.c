@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "brtc_cfg"
+
 #include "brtc_cfg.h"
 
 #define MAX_SUBCMD_LEN (64U)
@@ -232,7 +234,7 @@ static int parse_config(sr_session_ctx_t *session, const char *path)
 		if (!value)
 			continue;
 
-        LOG_DBG("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
+        LOG_INF("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
 
         /* skip the new created node with the default value */
         if (new_value && (oper == SR_OP_CREATED) && new_value->dflt) {
@@ -300,7 +302,7 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 	snprintf(stc_cmd, MAX_CMD_LEN, "tc qdisc %s dev %s %s\n",
 		conf->qdisc.action, conf->qdisc.ifname, conf->qdisc.block);
 
-	LOG_DBG("Command: %s\n", stc_cmd);
+	LOG_INF("Command: %s\n", stc_cmd);
 
 	sysret = system(stc_cmd);
 	if (!SYSCALL_OK(sysret)) {
@@ -375,7 +377,7 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 		strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 	}
 
-	LOG_DBG("Command: %s\n", stc_cmd);
+	LOG_INF("Command: %s\n", stc_cmd);
 
 	sysret = system(stc_cmd);
 	if (!SYSCALL_OK(sysret)) {
@@ -394,7 +396,7 @@ int brtc_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 {
 	int rc = SR_ERR_OK;
 
-    LOG_DBG("bridge traffic-control: start callback(%d): %s", (int)event, path);
+    LOG_INF("bridge traffic-control: start callback(%d): %s", (int)event, path);
 
 	rc = parse_config(session, path);
 	if (rc == SR_ERR_OK) {

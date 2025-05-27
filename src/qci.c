@@ -19,6 +19,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "qci"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,7 +30,6 @@
 #include <cjson/cJSON.h>
 
 #include "common.h"
-#include "main.h"
 #include "qci.h"
 
 void init_sf_list_node(struct std_qci_list *node, char *port, uint32_t sfid)

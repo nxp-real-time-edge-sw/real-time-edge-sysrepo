@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "qbv"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,7 +28,6 @@
 #include <cjson/cJSON.h>
 
 #include "common.h"
-#include "main.h"
 #include "qbv.h"
 
 #define TC_QDISC_DEFAULT_HANDLE		(100U)
@@ -80,7 +81,7 @@ static int tsn_config_del_qbv_by_tc(struct sr_qbv_conf *qbvconf, char *ifname)
 
 	snprintf(cmd_buff, MAX_CMD_LEN, cmd, ifname, TC_QDISC_DEFAULT_HANDLE);
 
-	LOG_DBG("Command: %s", cmd_buff);
+	LOG_INF("Command: %s", cmd_buff);
 
 	sysret = system(cmd_buff);
 	if (!SYSCALL_OK(sysret)) {
@@ -177,7 +178,7 @@ static int tsn_config_qbv_by_tc(sr_session_ctx_t *session, char *ifname,
 	snprintf(stc_subcmd, MAX_SUBCMD_LEN, "flags 2");
 	strncat(stc_cmd, stc_subcmd, MAX_CMD_LEN - 1 - strlen(stc_cmd));
 
-	LOG_DBG("Command: %s", stc_cmd);
+	LOG_INF("Command: %s", stc_cmd);
 	sysret = system(stc_cmd);
 	if (!SYSCALL_OK(sysret)) {
 	    return SR_ERR_INVAL_ARG;
@@ -516,7 +517,7 @@ int qbv_config(sr_session_ctx_t *session, const char *path, bool abort)
 		if (!ifname)
 			continue;
 
-        LOG_DBG("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
+        LOG_INF("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
 
         /* skip the new created node with the default value */
         if (new_value && (oper == SR_OP_CREATED) && new_value->dflt) {
@@ -549,7 +550,7 @@ int qbv_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 {
 	int rc = SR_ERR_OK;
 
-    LOG_DBG("Qbv: start callback(%d): %s", (int)event, path);
+    LOG_INF("Qbv: start callback(%d): %s", (int)event, path);
 
 	rc = qbv_config(session, path, false);
     if (rc) {

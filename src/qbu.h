@@ -21,7 +21,6 @@
 #ifndef __QBU_H_
 #define __QBU_H_
 
-#include "main.h"
 
 #define QBU_MODULE 			"ieee802-dot1q-preemption-bridge"
 #define QBU_FEATURE			"frame-preemption"

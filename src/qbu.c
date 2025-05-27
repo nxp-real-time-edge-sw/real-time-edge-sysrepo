@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "qbu"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -97,7 +99,7 @@ static int config_frame_preemption(const char *ifname, const uint32_t value)
 		snprintf(cmd_buff, sizeof(cmd_buff), cmd_disable, ifname);
 	}
 
-    LOG_DBG("Command: %s", cmd_buff);
+    LOG_INF("Command: %s", cmd_buff);
 	sysret = system(cmd_buff);
 	if (!SYSCALL_OK(sysret)) {
 		return SR_ERR_INVAL_ARG;
@@ -154,7 +156,7 @@ int qbu_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	char ifname[IF_NAME_MAX_LEN];
 	uint32_t mask = 0;
 
-    LOG_DBG("Qbu: start callback(%d): %s", (int)event, path);
+    LOG_INF("Qbu: start callback(%d): %s", (int)event, path);
 
     rc = asprintf(&xpath, "%s//*", path);
     if (rc < 0) {
@@ -174,7 +176,7 @@ int qbu_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
         if (rc != SR_ERR_OK) {
             break;
         }
-        LOG_DBG("node name: %s, opt: %d", LYD_NAME(node), (int)op);
+        LOG_INF("node name: %s, opt: %d", LYD_NAME(node), (int)op);
 
         /* skip the new created node with the default value */
         if ((op == SR_OP_CREATED) && (node->flags & LYD_DEFAULT)) {
@@ -203,7 +205,7 @@ int qbu_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 		return SR_ERR_CALLBACK_FAILED;
     }
 
-    LOG_DBG("Qbu: end callback(%d): %s", (int)event, path);
+    LOG_INF("Qbu: end callback(%d): %s", (int)event, path);
 
     return SR_ERR_OK;
 }

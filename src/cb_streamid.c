@@ -19,6 +19,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "cb_streamid"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,7 +30,6 @@
 #include <cjson/cJSON.h>
 
 #include "common.h"
-#include "main.h"
 #include "cb_streamid.h"
 #include "qci.h"
 
@@ -505,7 +506,7 @@ int get_streamid_per_port_per_id(sr_session_ctx_t *session, const char *path)
 		if (!value)
 			continue;
 
-        LOG_DBG("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
+        LOG_INF("node name: %s, opt: %d", sr_xpath_node_name(value->xpath), (int)oper);
 
         /* skip the new created node with the default value */
         if (new_value && (oper == SR_OP_CREATED) && new_value->dflt) {
@@ -670,11 +671,11 @@ void print_streamid_config(struct std_cb_stream *stream)
 {
 	struct tsn_cb_streamid *cbconf = &stream->cbconf;
 
-	LOG_DBG("stream-identity: port=%s, index=%d, handle=%d",
+	LOG_INF("stream-identity: port=%s, index=%d, handle=%d",
 			stream->port, stream->index, cbconf->handle);
-	LOG_DBG("  in-facing:  input-port=%d, output-port=%d",
+	LOG_INF("  in-facing:  input-port=%d, output-port=%d",
 			cbconf->ifac_iport, cbconf->ifac_oport);
-	LOG_DBG("  out-facing: input-port=%d, output-port=%d",
+	LOG_INF("  out-facing: input-port=%d, output-port=%d",
 			cbconf->ofac_iport, cbconf->ofac_oport);
 }
 
@@ -773,7 +774,7 @@ int cb_streamid_del_tc_config(char *buf, int len)
 	snprintf(sub_buf, SUB_CMD_LEN, "tc qdisc del dev %s ingress;", para->ifname);
 	strncat(buf, sub_buf, len - 1 - strlen(buf));
 
-	LOG_DBG("Command: %s\n", buf);
+	LOG_INF("Command: %s\n", buf);
 
 	sysret = system(buf);
 	if (!SYSCALL_OK(sysret)) {
@@ -894,7 +895,7 @@ int cb_streamid_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	int rc = SR_ERR_OK;
 	char xpath[XPATH_MAX_LEN] = {0,};
 
-    LOG_DBG("stream-identity: start callback(%d): %s", (int)event, path);
+    LOG_INF("stream-identity: start callback(%d): %s", (int)event, path);
 
 	snprintf(xpath, XPATH_MAX_LEN, "%s/*//*", CB_STREAMID_XPATH);
 

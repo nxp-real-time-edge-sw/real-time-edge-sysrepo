@@ -23,7 +23,6 @@
 
 #include <tsn/genl_tsn.h>
 #include "common.h"
-#include "main.h"
 
 #define QBV_TC_NUM (8)
 

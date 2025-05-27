@@ -24,7 +24,8 @@ elseif("${BUILD_TYPE_UPPER}" STREQUAL "DEBUG")
     set(CMAKE_C_FLAGS "-g -O0 ${CMAKE_C_FLAGS}")
 endif()
 
-set(YANG_MODULE_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/yang/modules/sysrepo-tsn" CACHE STRING "Directory where to copy the YANG modules to.")
+set(YANG_MODULE_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/yang/modules/sysrepo-tsn"
+    CACHE STRING "Directory where to copy the YANG modules to.")
 
 # dependencies - libtsn
 find_package(TSN REQUIRED)
@@ -60,64 +61,60 @@ set(LIBS ${LIBS} ${LIBYANG_LIBRARIES})
 find_package(Threads)
 set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
-find_package(LibSystemd)
-if(LIBSYSTEMD_FOUND)
-    set(RT_HAVE_SYSTEMD 1)
-    include_directories(${LIBSYSTEMD_INCLUDE_DIRS})
-    set(LIBS ${LIBS} ${LIBSYSTEMD_LIBRARIES})
-    message(STATUS "systemd system service unit path: ${SYSTEMD_UNIT_DIR}")
-else()
-    message(WARNING "Disabling sysrepo-plugind systemd support because libsystemd was not found.")
-endif()
+find_package(PkgConfig REQUIRED)
 
-set(SOURCES
-		src/main.c
+set(LLDP_PLUGIN_NAME "lldp-plugin")
+set(LLDP_SRC
 		src/common.c
+		src/lldp-plugin.c)
+
+set(PTP_PLUGIN_NAME "ptp-plugin")
+set(PTP_SRC
+		src/common.c
+		src/ptp-plugin.c)
+
+set(TSN_PLUGIN_NAME "tsn-plugin")
+set(TSN_SRC
+		src/common.c
+        src/tsn-plugin.c
+		src/ip_cfg.c
 		src/qbv.c
-		src/qbu.c
-		src/cb_streamid.c
+	    src/qbu.c
+		src/brtc_cfg.c
+		src/mac_cfg.c
+		src/vlan_cfg.c
 		src/qci.c
 		src/qci_sf.c
 		src/qci_sg.c
 		src/qci_fm.c
-		src/brtc_cfg.c
-		src/ip_cfg.c
-		src/mac_cfg.c
+		src/qci.c
 		src/cb.c
-		src/vlan_cfg.c
-		src/lldp.c
-		src/ptp.c
-		src/file_mon.c)
-
-find_package(PkgConfig)
+		src/cb_streamid.c)
 
 if (CONF_SYSREPO_TSN_TC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSYSREPO_TSN_TC")
 endif()
 
-if(RT_HAVE_SYSTEMD)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DRT_HAVE_SYSTEMD")
-endif()
-
-# Command line options to be passed to `sysrepoctl` when working with modules
-# which should only be accessible by an administrator
-if (NOT SYSREPOCTL_ROOT_PERMS)
-    set(SYSREPOCTL_ROOT_PERMS "-o root:root -p 600")
-endif()
-
-configure_file("${PROJECT_SOURCE_DIR}/sysrepo-tsn.service.in" "${PROJECT_BINARY_DIR}/sysrepo-tsn.service" @ONLY)
-
-if(RT_HAVE_SYSTEMD)
-    install(FILES ${PROJECT_BINARY_DIR}/sysrepo-tsn.service DESTINATION ${SYSTEMD_UNIT_DIR})
-endif()
-
 # install YANG modules
-file(GLOB yangs "${PROJECT_SOURCE_DIR}/modules/*.yang")
-install(FILES ${yangs} DESTINATION ${YANG_MODULE_DIR})
+file(GLOB yang_modules "${PROJECT_SOURCE_DIR}/modules/*.yang")
+install(FILES ${yang_modules} DESTINATION ${YANG_MODULE_DIR})
 
 install(FILES ${PROJECT_SOURCE_DIR}/scripts/install-tsn-yang.sh DESTINATION /etc/sysrepo-tsn/)
 
-add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
-target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBS})
+pkg_get_variable(PLUGINS_PATH sysrepo SRPD_PLUGINS_PATH)
 
-install(TARGETS ${CMAKE_PROJECT_NAME} RUNTIME DESTINATION bin)
+add_library(${LLDP_PLUGIN_NAME} MODULE ${LLDP_SRC})
+target_link_libraries(${LLDP_PLUGIN_NAME} ${LIBS})
+set_target_properties(${LLDP_PLUGIN_NAME} PROPERTIES PREFIX "")
+install(TARGETS ${LLDP_PLUGIN_NAME} DESTINATION ${PLUGINS_PATH})
+
+add_library(${PTP_PLUGIN_NAME} MODULE ${PTP_SRC})
+target_link_libraries(${PTP_PLUGIN_NAME} ${LIBS})
+set_target_properties(${PTP_PLUGIN_NAME} PROPERTIES PREFIX "")
+install(TARGETS ${PTP_PLUGIN_NAME} DESTINATION ${PLUGINS_PATH})
+
+add_library(${TSN_PLUGIN_NAME} MODULE ${TSN_SRC})
+target_link_libraries(${TSN_PLUGIN_NAME} ${LIBS})
+set_target_properties(${TSN_PLUGIN_NAME} PROPERTIES PREFIX "")
+install(TARGETS ${TSN_PLUGIN_NAME} DESTINATION ${PLUGINS_PATH})
+

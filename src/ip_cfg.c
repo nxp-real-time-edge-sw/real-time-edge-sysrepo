@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "ip_cfg"
+
 #include <libyang/libyang.h>
 
 #include "ip_cfg.h"
@@ -37,54 +39,6 @@ struct item_cfg {
 	struct sub_item_cfg ipv4[MAX_IP_NUM];
 };
 static struct item_cfg sitem_conf;
-
-#if 0
-static int get_inet_cfg(char *ifname, int req, void *buf, int len)
-{
-	int ret = 0;
-	int sockfd = 0;
-	struct ifreq ifr = {0};
-	struct sockaddr_in *sin = NULL;
-
-	if (!ifname || !buf)
-		return -1;
-
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0) {
-		LOG_ERR("create socket failed! ret:%d", sockfd);
-		return -2;
-	}
-
-	memset(&ifr, 0, sizeof(ifr));
-	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
-
-	ret = ioctl(sockfd, req, &ifr);
-	close(sockfd);
-	if (ret < 0) {
-		LOG_ERR("ioctl error! ret:%d", ret);
-		return -3;
-	}
-
-	if (req == SIOCGIFHWADDR) {
-		memcpy(buf, &ifr.ifr_ifru.ifru_hwaddr.sa_data, len);
-	} else {
-		sin = (struct sockaddr_in *)&ifr.ifr_addr;
-		memcpy((struct in_addr *)buf, &sin->sin_addr, len);
-	}
-
-	return 0;
-}
-
-static int get_inet_ip(char *ifname, struct in_addr *ip)
-{
-	return get_inet_cfg(ifname, SIOCGIFADDR, ip, ADDR_LEN);
-}
-
-static int get_inet_mask(char *ifname, struct in_addr *mask)
-{
-	return get_inet_cfg(ifname, SIOCGIFNETMASK, mask, ADDR_LEN);
-}
-#endif
 
 static int set_inet_cfg(char *ifname, int req, void *buf, int len)
 {
@@ -205,7 +159,7 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 
 	if (!conf->enabled) {
 		set_inet_updown(conf->ifname, false);
-        LOG_DBG("%s: disable the interface", conf->ifname);
+        LOG_ERR("%s: disable the interface", conf->ifname);
 		return rc;
 	}
 
@@ -219,7 +173,7 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 			if (ret != 0)
 				return SR_ERR_INVAL_ARG;
 
-			LOG_DBG("%s: set IP address to %s", ifname, inet_ntoa(ipv4->ip));
+			LOG_INF("%s: set IP address to %s", ifname, inet_ntoa(ipv4->ip));
 		}
 
 		if (ipv4->mask.s_addr) {
@@ -227,7 +181,7 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 			if (ret != 0)
 				return SR_ERR_INVAL_ARG;
 
-			LOG_DBG("%s: set netmask to %s", ifname, inet_ntoa(ipv4->mask));
+			LOG_INF("%s: set netmask to %s", ifname, inet_ntoa(ipv4->mask));
 		}
 	}
 	set_inet_updown(conf->ifname, true);
@@ -345,7 +299,7 @@ int ip_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	int rc = SR_ERR_OK;
     char *xpath;
 
-    LOG_DBG("ipv4: start callback(%d): %s", (int)event, path);
+    LOG_INF("ipv4: start callback(%d): %s", (int)event, path);
 
     rc = asprintf(&xpath, "%s//*", path);
     if (rc < 0) {
@@ -365,7 +319,7 @@ int ip_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
         if (rc != SR_ERR_OK) {
             break;
         }
-        LOG_DBG("node name: %s, opt: %d", LYD_NAME(node), (int)op);
+        LOG_INF("node name: %s, opt: %d", LYD_NAME(node), (int)op);
 
         if (op == SR_OP_CREATED || op == SR_OP_MODIFIED) {
 
@@ -393,6 +347,7 @@ int ip_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
         return SR_ERR_CALLBACK_FAILED;
     }
 
-    LOG_DBG("ipv4: end callback(%d): %s", (int)event, path);
+    LOG_INF("ipv4: end callback(%d): %s", (int)event, path);
     return SR_ERR_OK;
 }
+

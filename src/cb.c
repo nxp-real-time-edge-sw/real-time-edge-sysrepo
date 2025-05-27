@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "cb"
+
 #include "cb.h"
 #include "cb_streamid.h"
 
@@ -207,7 +209,7 @@ int cb_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 {
 	int rc = SR_ERR_OK;
 
-    LOG_DBG("frer: start callback(%d): %s", (int)event, path);
+    LOG_INF("frer: start callback(%d): %s", (int)event, path);
 
 	rc = parse_config(session, path);
 

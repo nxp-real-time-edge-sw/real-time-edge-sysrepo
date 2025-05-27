@@ -21,7 +21,6 @@
 #ifndef __IP_CFG_H__
 #define __IP_CFG_H__
 
-#include "main.h"
 #include "common.h"
 
 /* #define IPV4_XPATH	"/ietf-ip:ipv4" */

@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "vlan_cfg"
+
 #include "vlan_cfg.h"
 
 struct item_cfg {
@@ -43,52 +45,13 @@ static int set_inet_br_vlan(char *ifname, char *bridge_name, int vid, bool addfl
 		snprintf(cmdstr, MAX_CMD_LEN, "bridge vlan del dev %s vid %d",
 			 ifname, vid);
 
-    LOG_DBG("Command: %s", cmdstr);
+    LOG_INF("Command: %s", cmdstr);
 	ret = system(cmdstr);
 	if (SYSCALL_OK(ret))
 		return 0;
 	else
 		return -1;
 }
-
-#if 0
-static int set_inet_vlan(char *ifname, int vid, bool addflag)
-{
-	int ret = 0;
-	int sockfd = 0;
-	struct vlan_ioctl_args ifr;
-	size_t max_len = sizeof(ifr.device1);
-
-	if (!ifname)
-		return -1;
-
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0) {
-		PRINT("create socket failed! ret:%d", sockfd);
-		return -2;
-	}
-
-	memset(&ifr, 0, sizeof(ifr));
-	ifr.u.VID = vid;
-
-	if (addflag) {
-		ifr.cmd = ADD_VLAN_CMD;
-		snprintf(ifr.device1, max_len, "%s", ifname);
-	} else {
-		ifr.cmd = DEL_VLAN_CMD;
-		snprintf(ifr.device1, max_len, "%s.%d", ifname, vid);
-	}
-
-	ret = ioctl(sockfd, SIOCSIFVLAN, &ifr);
-	close(sockfd);
-	if (ret < 0) {
-		PRINT("%s ioctl error! ret:%d", __func__, ret);
-		return -3;
-	}
-
-	return 0;
-}
-#endif
 
 static int parse_node(sr_session_ctx_t *session, sr_val_t *value,
 			struct item_cfg *conf)
@@ -243,10 +206,10 @@ static int set_config(sr_session_ctx_t *session, bool abort)
 	if (conf->delflag) {
 		conf->delflag = false;
 		ret = set_inet_br_vlan(conf->ifname, conf->bridge_name, conf->vid, false);
-		LOG_DBG("del vlan ifname:%s vid:%d", conf->ifname, conf->vid);
+		LOG_INF("del vlan ifname:%s vid:%d", conf->ifname, conf->vid);
 	} else {
 		ret = set_inet_br_vlan(conf->ifname, conf->bridge_name, conf->vid, true);
-		LOG_DBG("add vlan ifname:%s vid:%d", conf->ifname, conf->vid);
+		LOG_INF("add vlan ifname:%s vid:%d", conf->ifname, conf->vid);
 	}
 
 	if (ret != 0)
@@ -304,7 +267,7 @@ int vlan_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 {
 	int rc = SR_ERR_OK;
 
-    LOG_DBG("bridge-vlan: start callback(%d): %s", (int)event, path);
+    LOG_INF("bridge-vlan: start callback(%d): %s", (int)event, path);
 
 	memset(&sitem_conf, 0, sizeof(struct item_cfg));
 	rc = parse_config(session, path);
@@ -315,7 +278,7 @@ int vlan_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
     if (rc) {
         return SR_ERR_CALLBACK_FAILED;
     } else {
-        LOG_DBG("bridge-vlan: end callback(%d): %s", (int)event, path);
+        LOG_INF("bridge-vlan: end callback(%d): %s", (int)event, path);
         return SR_ERR_OK;
     }
 }

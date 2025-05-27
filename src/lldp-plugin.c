@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define PLG_NAME    "lldp"
+
 #include <sysrepo.h>
 #include <cjson/cJSON.h>
 
@@ -25,6 +27,7 @@
 
 #define LLDP_BUFFER_SIZE    (32 * 1024U)
 
+static sr_subscription_ctx_t *subscription = NULL;
 
 static const char *lldp_convert_admin_status(const char *status)
 {
@@ -267,19 +270,17 @@ error:
 
 static int lldp_oper_subscribe_cb(sr_session_ctx_t *session, uint32_t sub_id,
         const char *module_name,const char *path, const char *request_xpath,
-
         uint32_t request_id, struct lyd_node **parent, void *private_data)
 {
     const struct ly_ctx *ly_ctx;
     struct lyd_node *root;
     int rc;
 
-    LOG_DBG("lldp: start oper callback at %s; request xpath: %s", path, request_xpath);
+    LOG_INF("lldp: start oper callback at %s; request xpath: %s", path, request_xpath);
 
     ly_ctx = sr_acquire_context(sr_session_get_connection(session));
     sr_release_context(sr_session_get_connection(session));
 
-    // /ieee802-dot1ab-lldp:lldp/
     rc = lyd_new_path(NULL, ly_ctx, LLDP_ROOT_PATH, NULL, 0, &root);
     if (rc) {
         goto error;
@@ -384,7 +385,7 @@ static int lldp_change_subscribe_cb(sr_session_ctx_t *session, uint32_t sub_id,
     int lyret = 0;
     int fd = 0;
 
-    LOG_DBG("lldp: start callback(%d): %s", (int)event, path);
+    LOG_INF("start callback(%d): %s", (int)event, path);
 
     rc = asprintf(&xpath, "%s//*", path);
     if (rc < 0) {
@@ -410,7 +411,7 @@ static int lldp_change_subscribe_cb(sr_session_ctx_t *session, uint32_t sub_id,
         if (rc != SR_ERR_OK) {
             break;
         }
-        LOG_DBG("node name: %s, opt: %d", LYD_NAME(node), (int)op);
+        LOG_INF("node name: %s, opt: %d", LYD_NAME(node), (int)op);
 
         /* skip the new created node with the default value */
         if ((op == SR_OP_CREATED) && (node->flags & LYD_DEFAULT)) {
@@ -445,16 +446,17 @@ error:
     return rc;
 }
 
-int lldp_module_init(sr_session_ctx_t *session, sr_subscription_ctx_t **subscription)
+int sr_plugin_init_cb(sr_session_ctx_t *session, void **private_data)
 {
     char *xpath = LLDP_ROOT_PATH;
-    int rc = 0;
+    int rc;
 
     rc = sr_module_change_subscribe(session, MODULE_NAME_LLDP, xpath,
                                     lldp_change_subscribe_cb, NULL, 0,
-                                    SR_SUBSCR_DONE_ONLY, subscription);
+                                    SR_SUBSCR_DONE_ONLY, &subscription);
     if (rc != SR_ERR_OK) {
-        LOG_ERR("Failed to subscribe for \"%s\" (%s).", xpath, sr_strerror(rc));
+        LOG_ERR("Failed to subscribe for \"%s\" (%s).",
+                xpath, sr_strerror(rc));
         goto error;
     }
     LOG_INF("Subscribed changes for %s", xpath);
@@ -462,7 +464,7 @@ int lldp_module_init(sr_session_ctx_t *session, sr_subscription_ctx_t **subscrip
     sr_session_switch_ds(session, SR_DS_OPERATIONAL);
 
     rc = sr_oper_get_subscribe(session, MODULE_NAME_LLDP, xpath,
-                               lldp_oper_subscribe_cb, NULL, 0, subscription);
+                               lldp_oper_subscribe_cb, NULL, 0, &subscription);
     if (rc != SR_ERR_OK) {
         LOG_ERR("Failed to subscribe operational data for \"%s\" (%s).",
                 xpath, sr_strerror(rc));
@@ -473,6 +475,15 @@ int lldp_module_init(sr_session_ctx_t *session, sr_subscription_ctx_t **subscrip
     sr_session_switch_ds(session, SR_DS_RUNNING);
 
     return SR_ERR_OK;
+
 error:
-    return SR_ERR_UNSUPPORTED;
+    sr_unsubscribe(subscription);
+    return rc;
+}
+
+void sr_plugin_cleanup_cb(sr_session_ctx_t *running_session, void *private_data)
+{
+	sr_unsubscribe(subscription);
+
+    LOG_INF("LLDP plugin cleanup finished.");
 }

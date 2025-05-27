@@ -27,10 +27,9 @@
 #define MSG_MAX_LEN			(400U)
 
 #include <sysrepo.h>
-#include <stdbool.h>
 #include <sysrepo/values.h>
 #include <sysrepo/xpath.h>
-#include <tsn/genl_tsn.h> /* must ensure no stdbool.h was included before */
+#include <tsn/genl_tsn.h>
 #include <linux/tsn.h>
 #include <errno.h>
 
@@ -38,9 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <pthread.h>
-#include <signal.h>
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -53,15 +50,11 @@
 #include <sys/socket.h>
 #include <sys/mman.h>
 #include <sys/time.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <linux/if_vlan.h>
 #include <linux/sockios.h>
 #include <assert.h>
 
 #include "log.h"
-
-#define PRINT printf
 
 #define MAX_CMD_LEN		(512)
 #define SUB_CMD_LEN		(64)
@@ -70,6 +63,24 @@
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define SYSCALL_OK(r) (((r) != -1) && WIFEXITED(r) && (WEXITSTATUS(r) == 0))
+
+#define SR_CONFIG_SUBSCR(mod_name, xpath, cb, prio)							\
+    rc = sr_module_change_subscribe(session, mod_name, xpath, cb, NULL, prio, 	\
+           	SR_SUBSCR_DONE_ONLY, &subscription);		                    \
+    if (rc != SR_ERR_OK) {													\
+        LOG_ERR("Failed to subscribe for \"%s\" (%s).",	                    \
+                xpath, sr_strerror(rc));									\
+        goto error;                                                         \
+    } else {                                                                \
+        LOG_INF("Subscribed changes for %s", xpath);                        \
+    }
+
+#define IF_XPATH 				"/ietf-interfaces:interfaces/interface"
+#define BRIDGE_XPATH 			"/ieee802-dot1q-bridge:bridges/bridge"
+#define BRIDGE_COMPONENT_XPATH 	BRIDGE_XPATH "/component"
+
+#define BR_PORT 				"/ieee802-dot1q-bridge:bridge-port"
+#define BRIDGE_PORT_XPATH       "/ietf-interfaces:interfaces/interface/ieee802-dot1q-bridge:bridge-port"
 
 enum apply_status {
 	APPLY_NONE = 0,
@@ -100,17 +111,16 @@ struct base_time_s {
 	uint64_t nanoseconds;
 };
 
-void print_change(sr_change_oper_t oper, sr_val_t *val_old, sr_val_t *val_new);
-void print_config_iter(sr_session_ctx_t *session, const char *path);
 void init_tsn_mutex(void);
 void destroy_tsn_mutex(void);
+
 void init_tsn_socket(void);
 void close_tsn_socket(void);
-int errno2sp(int errtsn);
+
 uint64_t cal_base_time(struct base_time_s *basetime);
 uint64_t cal_cycle_time(struct cycle_time_s *cycletime);
-void print_subtree_changes(sr_session_ctx_t *session, const char *path);
-int str_to_num(int type, char *str, uint64_t *num);
+
+int errno2sp(int errtsn);
 void pri2num(char *pri_str, int8_t *pri_num);
 bool is_del_oper(sr_session_ctx_t *session, char *path);
 char *get_host_name(void);
