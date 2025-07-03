@@ -84,22 +84,63 @@ err:
 static int config_frame_preemption(const char *ifname, const uint32_t value)
 {
 #ifdef SYSREPO_TSN_TC
-	const char *cmd_enable = "ethtool --set-frame-preemption %s fp on preemptible-queues-mask 0x%02X min-frag-size %d";
-	const char *cmd_disable = "ethtool --set-frame-preemption %s disabled";
+	const char *cmd_enable = "ethtool --set-mm %s tx-enabled on pmac-enabled on verify-enabled off tx-min-frag-size %d";
+	const char *cmd_disable = "ethtool  --set-mm %s tx-enabled off pmac-enabled off";
+	char *host_name = NULL;
+	int num_tc = 8;
 	char cmd_buff[MAX_CMD_LEN];
+	char stc_subcmd[SUB_CMD_LEN];
 	int sysret = 0;
 
-    if (strlen(ifname) == 0) {
+	if (strlen(ifname) == 0) {
 		return SR_ERR_INVAL_ARG;
-    }
+	}
 
 	if (value != 0) {
-		snprintf(cmd_buff, sizeof(cmd_buff), cmd_enable, ifname, value, QBU_MIN_FRAG_SIZE);
+		snprintf(cmd_buff, sizeof(cmd_buff), cmd_enable, ifname, QBU_MIN_FRAG_SIZE);
 	} else {
 		snprintf(cmd_buff, sizeof(cmd_buff), cmd_disable, ifname);
 	}
 
-    LOG_INF("Command: %s", cmd_buff);
+	LOG_INF("Command: %s", cmd_buff);
+	sysret = system(cmd_buff);
+	if (!SYSCALL_OK(sysret)) {
+		return SR_ERR_INVAL_ARG;
+	}
+
+	host_name = get_host_name();
+	if (host_name && (strcasestr(host_name, "IMX8MP") ||
+	    strcasestr(host_name, "IMX8DXL") ||
+	    strcasestr(host_name, "IMX93")) && !strcasestr(ifname, "swp"))
+		num_tc = 5;
+
+	snprintf(cmd_buff, MAX_CMD_LEN, "tc qdisc del dev %s root handle 1:", ifname);
+	system(cmd_buff);
+
+	snprintf(cmd_buff, MAX_CMD_LEN, "tc qdisc add dev %s root handle 1: mqprio num_tc %d map ", ifname, num_tc);
+	for (int i = 0; i < num_tc; i++) {
+		snprintf(stc_subcmd, SUB_CMD_LEN, "%d ", i);
+		strncat(cmd_buff, stc_subcmd, strlen(stc_subcmd) + 1);
+	}
+	snprintf(stc_subcmd, SUB_CMD_LEN, "queues ");
+	strncat(cmd_buff, stc_subcmd, strlen(stc_subcmd) + 1);
+	for (int i = 0; i < num_tc; i++) {
+		snprintf(stc_subcmd, SUB_CMD_LEN, "1@%d ", i);
+		strncat(cmd_buff, stc_subcmd, strlen(stc_subcmd) + 1);
+	}
+	snprintf(stc_subcmd, SUB_CMD_LEN, "fp ");
+	strncat(cmd_buff, stc_subcmd, strlen(stc_subcmd) + 1);
+	for (int i = 0; i < num_tc; i++) {
+		if (value & (1 << i))
+			snprintf(stc_subcmd, SUB_CMD_LEN, "P ");
+		else
+			snprintf(stc_subcmd, SUB_CMD_LEN, "E ");
+		strncat(cmd_buff, stc_subcmd, strlen(stc_subcmd) + 1);
+	}
+	snprintf(stc_subcmd, SUB_CMD_LEN, "hw 1");
+	strncat(cmd_buff, stc_subcmd, strlen(stc_subcmd) + 1);
+
+	LOG_INF("Command: %s", cmd_buff);
 	sysret = system(cmd_buff);
 	if (!SYSCALL_OK(sysret)) {
 		return SR_ERR_INVAL_ARG;
