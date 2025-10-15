@@ -360,7 +360,7 @@ static int lldp_do_update(char *fname)
 	int sysret = 0;
 
     sprintf(cmd_buf, cmd_fmt, fname);
-    LOG_INF(cmd_buf);
+    LOG_INF("%s", cmd_buf);
 
     sysret = system(cmd_buf);
 	if (!SYSCALL_OK(sysret)) {
