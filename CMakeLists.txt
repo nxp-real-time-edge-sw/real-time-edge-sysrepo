@@ -61,6 +61,11 @@ set(LIBS ${LIBS} ${LIBYANG_LIBRARIES})
 find_package(Threads)
 set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
+# dependencies - genavb/tsn
+find_package(GENAVB REQUIRED)
+include_directories(${GENAVB_INCLUDE_DIRS})
+set(LIBS ${LIBS} ${GENAVB_LIBRARIES})
+
 find_package(PkgConfig REQUIRED)
 
 set(LLDP_PLUGIN_NAME "lldp-plugin")
@@ -72,6 +77,11 @@ set(PTP_PLUGIN_NAME "ptp-plugin")
 set(PTP_SRC
 		src/common.c
 		src/ptp-plugin.c)
+
+set(GENAVB_PTP_PLUGIN_NAME "genavb_gptp-plugin")
+set(GENAVB_PTP_SRC
+		src/genavb_gptp_helpers.c
+		src/genavb_gptp_plugin.c)
 
 set(TSN_PLUGIN_NAME "tsn-plugin")
 set(TSN_SRC
@@ -118,6 +128,11 @@ add_library(${PTP_PLUGIN_NAME} MODULE ${PTP_SRC})
 target_link_libraries(${PTP_PLUGIN_NAME} ${LIBS})
 set_target_properties(${PTP_PLUGIN_NAME} PROPERTIES PREFIX "")
 install(TARGETS ${PTP_PLUGIN_NAME} DESTINATION ${PLUGINS_PATH})
+
+add_library(${GENAVB_PTP_PLUGIN_NAME} MODULE ${GENAVB_PTP_SRC})
+target_link_libraries(${GENAVB_PTP_PLUGIN_NAME} ${LIBS})
+set_target_properties(${GENAVB_PTP_PLUGIN_NAME} PROPERTIES PREFIX "")
+install(TARGETS ${GENAVB_PTP_PLUGIN_NAME} DESTINATION ${PLUGINS_PATH})
 
 add_library(${TSN_PLUGIN_NAME} MODULE ${TSN_SRC})
 target_link_libraries(${TSN_PLUGIN_NAME} ${LIBS})
