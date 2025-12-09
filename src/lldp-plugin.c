@@ -59,42 +59,77 @@ static const char *lldp_convert_id_subtype(const char *type)
     }
 }
 
-static void lldp_get_port_info(struct lyd_node *parent, const cJSON *port)
+static void lldp_get_ieee_mac_address(char *id)
 {
-    cJSON *id = cJSON_GetObjectItem(port, "id");
-    char *type = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "type"));
-    if (type != NULL) {
-        lyd_new_path(parent, NULL, "port-id-subtype",
-                            lldp_convert_id_subtype(type), 0, NULL);
-    }
+    size_t len;
 
-    char *value = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "value"));
-    if (value != NULL) {
-        lyd_new_path(parent, NULL, "port-id", value, 0, NULL);
-    }
-
-    cJSON *descr = cJSON_GetObjectItem(port, "descr");
-    char *descr_val = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(descr, 0), "value"));
-    if (descr_val != NULL) {
-        lyd_new_path(parent, NULL, "port-desc", descr_val, 0, NULL);
+    len = strlen(id);
+    for (int i = 0; i < len; i++) {
+        if (id[i] == ':') {
+            id[i] = '-';
+        } else {
+            id[i] = toupper(id[i]);
+        }
     }
 }
 
-static void lldp_get_system_data(struct lyd_node *parent, const cJSON *chassis)
+static int lldp_get_port_info(struct lyd_node *parent, const cJSON *port)
 {
-    cJSON *id = cJSON_GetObjectItem(chassis, "id");
+    cJSON *id;
+    cJSON *descr;
+    char *type;
+    char *descr_val;
+    char *value;
 
-    /* chassis-id-subtype */
-    char *type = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "type"));
-    if (type != NULL) {
-        lyd_new_path(parent, NULL, "chassis-id-subtype",
-                        lldp_convert_id_subtype(type), 0, NULL);
+    id = cJSON_GetObjectItem(port, "id");
+    if (id == NULL) {
+        return SR_ERR_NOT_FOUND;
     }
 
-    /* chassis-id */
-    char *value = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "value"));
-    if (value != NULL) {
-        lyd_new_path(parent, NULL, "chassis-id", value, 0, NULL);
+    type = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "type"));
+    if (type != NULL && !strcmp(type, "mac")) {
+        lyd_new_path(parent, NULL, "port-id-subtype", lldp_convert_id_subtype(type), 0, NULL);
+
+        value = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "value"));
+        if (value != NULL) {
+            lldp_get_ieee_mac_address(value);
+            lyd_new_path(parent, NULL, "port-id", value, 0, NULL);
+        }
+    }
+
+    descr = cJSON_GetObjectItem(port, "descr");
+    descr_val = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(descr, 0), "value"));
+    if (descr_val != NULL) {
+        lyd_new_path(parent, NULL, "port-desc", descr_val, 0, NULL);
+    }
+
+    return SR_ERR_OK;
+}
+
+static int lldp_get_system_data(struct lyd_node *parent, const cJSON *chassis)
+{
+    cJSON *id;
+    char *type;
+    char *value;
+
+    id = cJSON_GetObjectItem(chassis, "id");
+    if (id == NULL) {
+        return SR_ERR_NOT_FOUND;
+    }
+
+    /* chassis-id-subtype and chassis-id */
+    type = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "type"));
+    if (type != NULL && !strcmp(type, "mac")) {
+        lyd_new_path(parent, NULL, "chassis-id-subtype",
+                        lldp_convert_id_subtype(type), 0, NULL);
+
+        value = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "value"));
+        if (value != NULL) {
+            lldp_get_ieee_mac_address(value);
+            lyd_new_path(parent, NULL, "chassis-id", value, 0, NULL);
+        }
+    } else {
+        return SR_ERR_NOT_FOUND;
     }
 
     /* system-name */
@@ -110,6 +145,8 @@ static void lldp_get_system_data(struct lyd_node *parent, const cJSON *chassis)
     if (system_description != NULL) {
         lyd_new_path(parent, NULL, "system-description", system_description, 0, NULL);
     }
+
+    return SR_ERR_OK;
 }
 
 static int lldp_sys_json_info(const char *cmd, char *buffer, cJSON **output)
@@ -145,7 +182,7 @@ static int lldp_get_neighbor_info(struct lyd_node *parent, const char *if_name)
     char *command;
     cJSON *output;
     char *buffer;
-    int rc;
+    int rc = SR_ERR_OK;
 
     asprintf(&command, cmd_fmt, if_name);
 
@@ -176,22 +213,20 @@ static int lldp_get_neighbor_info(struct lyd_node *parent, const char *if_name)
                                 cJSON_GetObjectItem(interface0, "chassis"), 0);
     lldp_get_system_data(remote_systems_data_node, chassis0);
 
-    rc = SR_ERR_OK;
-
 error:
     cJSON_Delete(output);
     free(buffer);
     return rc;
 }
 
-static void lldp_get_interfaces(struct lyd_node *parent)
+static int lldp_get_interfaces(struct lyd_node *parent)
 {
     const char *cmd = "lldpcli -f json show interfaces 2>&1";
     struct lyd_node *port_node = NULL;
     cJSON *output = NULL;
     cJSON *interface = NULL;
     char *buffer;
-    int rc;
+    int rc = SR_ERR_OK;
 
     buffer = (char *)malloc(LLDP_BUFFER_SIZE);
     memset(buffer, 0, LLDP_BUFFER_SIZE);
@@ -227,22 +262,21 @@ static void lldp_get_interfaces(struct lyd_node *parent)
         lldp_get_neighbor_info(port_node, if_name);
 
         // fix dest-mac-address
-
     }
-    rc = SR_ERR_OK;
 
 error:
     cJSON_Delete(output);
     free(buffer);
+    return rc;
 }
 
-static void lldp_get_local_system_data(struct lyd_node *parent)
+static int lldp_get_local_system_data(struct lyd_node *parent)
 {
     struct lyd_node *local_system_data_node;
     const char *cmd = "lldpcli -f json show chassis details 2>&1";
     char *buffer;
     cJSON *sysinf;
-    int rc;
+    int rc = SR_ERR_OK;
 
     buffer = (char *)malloc(LLDP_BUFFER_SIZE);
     memset(buffer, 0, LLDP_BUFFER_SIZE);
@@ -260,12 +294,12 @@ static void lldp_get_local_system_data(struct lyd_node *parent)
     cJSON *local_chassis0 = cJSON_GetArrayItem(cJSON_GetObjectItem(sysinf, "local-chassis"), 0);
     cJSON *chassis0 = cJSON_GetArrayItem(cJSON_GetObjectItem(local_chassis0, "chassis"), 0);
 
-    lldp_get_system_data(local_system_data_node, chassis0);
-    rc = SR_ERR_OK;
+    rc = lldp_get_system_data(local_system_data_node, chassis0);
 
 error:
     cJSON_Delete(sysinf);
     free(buffer);
+    return rc;
 }
 
 static int lldp_oper_subscribe_cb(sr_session_ctx_t *session, uint32_t sub_id,
