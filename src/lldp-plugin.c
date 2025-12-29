@@ -18,6 +18,8 @@
 
 #include <sysrepo.h>
 #include <cjson/cJSON.h>
+#include <arpa/inet.h>
+#include <time.h>
 
 #include "common.h"
 
@@ -26,6 +28,10 @@
 #define LLDP_PORT_PATH      LLDP_ROOT_PATH "/port"
 
 #define LLDP_BUFFER_SIZE    (32 * 1024U)
+
+#define SECONDS_PER_MINUTE      (60U)
+#define SECONDS_PER_HOUR        (60 * SECONDS_PER_MINUTE)
+#define SECONDS_PER_DAY         (24 * SECONDS_PER_HOUR)
 
 static sr_subscription_ctx_t *subscription = NULL;
 
@@ -42,8 +48,11 @@ static const char *lldp_convert_admin_status(const char *status)
     }
 }
 
-static const char *lldp_convert_id_subtype(const char *type)
+static const char *lldp_get_id_subtype(const char *type)
 {
+    if (type == NULL)
+        return NULL;
+
     if (!strcmp(type, "mac")) {
         return "mac-address";
     } else if (!strcmp(type, "ifname")) {
@@ -55,7 +64,7 @@ static const char *lldp_convert_id_subtype(const char *type)
     } else if (!strcmp(type, "ip")) {
         return "network-address";
     } else {
-        return type;
+        return NULL;
     }
 }
 
@@ -73,80 +82,80 @@ static void lldp_get_ieee_mac_address(char *id)
     }
 }
 
-static int lldp_get_port_info(struct lyd_node *parent, const cJSON *port)
+static int lldp_get_management_address(struct lyd_node *parent, const cJSON *chassis, const char *node_name)
 {
-    cJSON *id;
-    cJSON *descr;
-    char *type;
-    char *descr_val;
-    char *value;
+    struct lyd_node *mgmt_node = NULL;
+    uint32_t ipv4;
+    char ipv4_val[32];
+    int ret = 0;
+    cJSON *item;
 
-    id = cJSON_GetObjectItem(port, "id");
-    if (id == NULL) {
+    cJSON *mgmt_ip = cJSON_GetObjectItem(chassis, "mgmt-ip");
+    if (mgmt_ip == NULL)
         return SR_ERR_NOT_FOUND;
+
+    cJSON_ArrayForEach(item, mgmt_ip) {
+        char *val = cJSON_GetStringValue(cJSON_GetObjectItem(item, "value"));
+        ret = inet_pton(AF_INET, val, &ipv4);
+        if (ret > 0)
+            break;
     }
 
-    type = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "type"));
-    if (type != NULL && !strcmp(type, "mac")) {
-        lyd_new_path(parent, NULL, "port-id-subtype", lldp_convert_id_subtype(type), 0, NULL);
+    if (ret == 0)
+        return SR_ERR_NOT_FOUND;
 
-        value = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "value"));
-        if (value != NULL) {
-            lldp_get_ieee_mac_address(value);
-            lyd_new_path(parent, NULL, "port-id", value, 0, NULL);
-        }
-    }
-
-    descr = cJSON_GetObjectItem(port, "descr");
-    descr_val = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(descr, 0), "value"));
-    if (descr_val != NULL) {
-        lyd_new_path(parent, NULL, "port-desc", descr_val, 0, NULL);
-    }
+    const char *address_subtype = "ietf-routing:ipv4";
+    snprintf(ipv4_val, sizeof(ipv4_val), "%08X", htonl(ipv4));
+    lyd_new_list(parent, NULL, node_name, 0, &mgmt_node,
+                 address_subtype, ipv4_val);
 
     return SR_ERR_OK;
 }
 
-static int lldp_get_system_data(struct lyd_node *parent, const cJSON *chassis)
+static void lldp_get_port_id_and_desc(struct lyd_node *parent, const cJSON *port)
 {
-    cJSON *id;
-    char *type;
-    char *value;
+    cJSON *id = cJSON_GetObjectItem(port, "id");
+    if (id != NULL) {
+        char *type = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "type"));
 
-    id = cJSON_GetObjectItem(chassis, "id");
-    if (id == NULL) {
-        return SR_ERR_NOT_FOUND;
-    }
+        const char *port_id_subtype = lldp_get_id_subtype(type);
+        if (port_id_subtype != NULL) {
+            lyd_new_path(parent, NULL, "port-id-subtype", port_id_subtype, 0, NULL);
 
-    /* chassis-id-subtype and chassis-id */
-    type = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "type"));
-    if (type != NULL && !strcmp(type, "mac")) {
-        lyd_new_path(parent, NULL, "chassis-id-subtype",
-                        lldp_convert_id_subtype(type), 0, NULL);
+            char *value = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "value"));
+            if (value != NULL) {
+                if (!strcmp(port_id_subtype, "mac-address"))
+                    lldp_get_ieee_mac_address(value);
 
-        value = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "value"));
-        if (value != NULL) {
-            lldp_get_ieee_mac_address(value);
-            lyd_new_path(parent, NULL, "chassis-id", value, 0, NULL);
+                lyd_new_path(parent, NULL, "port-id", value, 0, NULL);
+            }
         }
-    } else {
-        return SR_ERR_NOT_FOUND;
     }
 
-    /* system-name */
-    cJSON *name = cJSON_GetObjectItem(chassis, "name");
-    char *system_name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(name, 0), "value"));
-    if (system_name != NULL) {
-        lyd_new_path(parent, NULL, "system-name", system_name, 0, NULL);
+    cJSON *descr = cJSON_GetObjectItem(port, "descr");
+    char *descr_val = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(descr, 0), "value"));
+    if (descr_val != NULL) {
+        lyd_new_path(parent, NULL, "port-desc", descr_val, 0, NULL);
     }
+}
 
-    /* system-description */
-    cJSON *system_descr = cJSON_GetObjectItem(chassis, "descr");
-    char *system_description = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(system_descr, 0), "value"));
-    if (system_description != NULL) {
-        lyd_new_path(parent, NULL, "system-description", system_description, 0, NULL);
-    }
+static void lldp_get_interface_mac_address(const char *ifname, char *ieee_mac, int length)
+{
+    struct ifreq ifr;
+    uint8_t *mac;
+    int fd;
 
-    return SR_ERR_OK;
+    fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+
+    strncpy(ifr.ifr_name, ifname, IFNAMSIZ-1);
+    ifr.ifr_addr.sa_family = AF_INET;
+    ioctl(fd, SIOCGIFHWADDR, &ifr);
+
+    mac = (uint8_t *)ifr.ifr_hwaddr.sa_data;
+    snprintf(ieee_mac, length, "%02X-%02X-%02X-%02X-%02X-%02X",
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    close(fd);
 }
 
 static int lldp_sys_json_info(const char *cmd, char *buffer, cJSON **output)
@@ -174,14 +183,89 @@ static int lldp_sys_json_info(const char *cmd, char *buffer, cJSON **output)
     return SR_ERR_OK;
 }
 
-static int lldp_get_neighbor_info(struct lyd_node *parent, const char *if_name)
+static void lldp_age_to_time_mark(const char *age, char *time_mark, int length)
+{
+    struct timespec now;
+    int days;
+    int hours;
+    int minutes;
+    int seconds;
+    time_t offset;
+    int ret;
+
+    clock_gettime(CLOCK_MONOTONIC, &now);
+
+    ret = sscanf(age, "%d days, %02d:%02d:%02d", &days, &hours, &minutes, &seconds);
+    if (ret != 4) {
+        ret = sscanf(age, "%d day, %02d:%02d:%02d", &days, &hours, &minutes, &seconds);
+    }
+
+    if (ret != 4) {
+        days = 0;
+        hours = 0;
+        minutes = 0;
+        seconds = 0;
+    }
+
+    offset = days * SECONDS_PER_DAY + hours * SECONDS_PER_HOUR +
+                minutes * SECONDS_PER_MINUTE + seconds;
+
+    snprintf(time_mark, length, "%lld", (long long)(now.tv_sec - offset) * 100);
+}
+
+static int lldp_get_system_data(struct lyd_node *parent, const cJSON *chassis)
+{
+    cJSON *id;
+    char *type;
+    char *value;
+
+    id = cJSON_GetObjectItem(chassis, "id");
+    if (id == NULL) {
+        return SR_ERR_NOT_FOUND;
+    }
+
+    /* chassis-id-subtype and chassis-id */
+    type = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "type"));
+    const char *chassis_id_subtype = lldp_get_id_subtype(type);
+    if (chassis_id_subtype != NULL) {
+
+        lyd_new_path(parent, NULL, "chassis-id-subtype", chassis_id_subtype, 0, NULL);
+
+        value = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(id, 0), "value"));
+        if (value != NULL) {
+            if (!strcmp(chassis_id_subtype, "mac-address"))
+                lldp_get_ieee_mac_address(value);
+
+            lyd_new_path(parent, NULL, "chassis-id", value, 0, NULL);
+        }
+    }
+
+    /* system-name */
+    cJSON *name = cJSON_GetObjectItem(chassis, "name");
+    char *system_name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(name, 0), "value"));
+    if (system_name != NULL) {
+        lyd_new_path(parent, NULL, "system-name", system_name, 0, NULL);
+    }
+
+    /* system-description */
+    cJSON *system_descr = cJSON_GetObjectItem(chassis, "descr");
+    char *system_description = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetArrayItem(system_descr, 0), "value"));
+    if (system_description != NULL) {
+        lyd_new_path(parent, NULL, "system-description", system_description, 0, NULL);
+    }
+
+    return SR_ERR_OK;
+}
+
+static int lldp_get_remote_systems_data(struct lyd_node *parent, const char *if_name)
 {
     const char *cmd_fmt = "lldpcli -f json show neighbors ports %s  2>&1";
     struct lyd_node *remote_systems_data_node;
-    char *time_mark = "1";
     char *command;
     cJSON *output;
+    cJSON *interface;
     char *buffer;
+    char time_mark[32];
     int rc = SR_ERR_OK;
 
     asprintf(&command, cmd_fmt, if_name);
@@ -195,23 +279,34 @@ static int lldp_get_neighbor_info(struct lyd_node *parent, const char *if_name)
         goto error;
     }
 
-    cJSON *lldp = cJSON_GetObjectItem(output, "lldp");
-    cJSON *interface0 = cJSON_GetArrayItem(cJSON_GetObjectItem(
-                            cJSON_GetArrayItem(lldp, 0), "interface"), 0);
+    cJSON *lldp0 = cJSON_GetArrayItem(cJSON_GetObjectItem(output, "lldp"), 0);
+    cJSON *interfaces = cJSON_GetObjectItem(lldp0, "interface");
 
-    char *rid = cJSON_GetStringValue(cJSON_GetObjectItem(interface0, "rid"));
-    if (rid == NULL) {
-        goto error;
+    cJSON_ArrayForEach(interface, interfaces) {
+
+        char *rid = cJSON_GetStringValue(cJSON_GetObjectItem(interface, "rid"));
+        if (rid == NULL)
+            goto error;
+
+        char *age = cJSON_GetStringValue(cJSON_GetObjectItem(interface, "age"));
+        if (age == NULL)
+            goto error;
+
+        lldp_age_to_time_mark(age, time_mark, sizeof(time_mark) - 1);
+
+        lyd_new_list(parent, NULL, "remote-systems-data", 0,
+                     &remote_systems_data_node, time_mark, rid);
+
+        cJSON *chassis0 = cJSON_GetArrayItem(cJSON_GetObjectItem(interface, "chassis"), 0);
+        if (chassis0 != NULL)
+            lldp_get_system_data(remote_systems_data_node, chassis0);
+
+        cJSON *port = cJSON_GetArrayItem(cJSON_GetObjectItem(interface, "port"), 0);
+        if (port != NULL)
+            lldp_get_port_id_and_desc(remote_systems_data_node, port);
+
+        lldp_get_management_address(remote_systems_data_node, chassis0, "management-address");
     }
-    lyd_new_list(parent, NULL, "remote-systems-data", 0,
-                        &remote_systems_data_node, time_mark, rid);
-
-    cJSON *port = cJSON_GetArrayItem(cJSON_GetObjectItem(interface0, "port"), 0);
-    lldp_get_port_info(remote_systems_data_node, port);
-
-    cJSON *chassis0 = cJSON_GetArrayItem(
-                                cJSON_GetObjectItem(interface0, "chassis"), 0);
-    lldp_get_system_data(remote_systems_data_node, chassis0);
 
 error:
     cJSON_Delete(output);
@@ -219,10 +314,47 @@ error:
     return rc;
 }
 
+static int lldp_get_port_info(struct lyd_node *parent, const cJSON *interface)
+{
+    struct lyd_node *port_node = NULL;
+    char *if_name;
+    char dst_mac[32];
+
+    if_name = cJSON_GetStringValue(cJSON_GetObjectItem(interface, "name"));
+    if (if_name == NULL)
+        return SR_ERR_NOT_FOUND;
+
+    memset(dst_mac, 0, sizeof(dst_mac));
+    lldp_get_interface_mac_address(if_name, dst_mac, sizeof(dst_mac) - 1);
+
+    lyd_new_list(parent, NULL, "port", 0, &port_node, if_name, dst_mac);
+
+    cJSON *status = cJSON_GetArrayItem(cJSON_GetObjectItem(interface, "status"), 0);
+    if (status != NULL) {
+        char *status_val = cJSON_GetStringValue(cJSON_GetObjectItem(status, "value"));
+        if (status_val != NULL) {
+            lyd_new_path(port_node, NULL, "admin-status",
+                    lldp_convert_admin_status(status_val), 0, NULL);
+        }
+    }
+
+    cJSON *chassis = cJSON_GetArrayItem(cJSON_GetObjectItem(interface, "chassis"), 0);
+    if (chassis != NULL) {
+        lldp_get_management_address(port_node, chassis, "management-address-tx-port");
+    }
+
+    cJSON *port = cJSON_GetArrayItem(cJSON_GetObjectItem(interface, "port"), 0);
+    if (port != NULL)
+        lldp_get_port_id_and_desc(port_node, port);
+
+    lldp_get_remote_systems_data(port_node, if_name);
+
+    return SR_ERR_OK;
+}
+
 static int lldp_get_interfaces(struct lyd_node *parent)
 {
     const char *cmd = "lldpcli -f json show interfaces 2>&1";
-    struct lyd_node *port_node = NULL;
     cJSON *output = NULL;
     cJSON *interface = NULL;
     char *buffer;
@@ -240,28 +372,7 @@ static int lldp_get_interfaces(struct lyd_node *parent)
     cJSON *interfaces = cJSON_GetObjectItem(cJSON_GetArrayItem(lldp, 0), "interface");
 
     cJSON_ArrayForEach(interface, interfaces) {
-
-        char *temp_mac = "00-00-00-00-00-00";
-        char *if_name = cJSON_GetStringValue(cJSON_GetObjectItem(interface, "name"));
-        if (if_name == NULL) {
-            continue;
-        }
-
-        lyd_new_list(parent, NULL, "port", 0, &port_node, if_name, temp_mac);
-
-        cJSON *status = cJSON_GetArrayItem(cJSON_GetObjectItem(interface, "status"), 0);
-        char *status_val = cJSON_GetStringValue(cJSON_GetObjectItem(status, "value"));
-        if (status_val != NULL) {
-            lyd_new_path(port_node, NULL, "admin-status",
-                         lldp_convert_admin_status(status_val), 0, NULL);
-        }
-
-        cJSON *port = cJSON_GetArrayItem(cJSON_GetObjectItem(interface, "port"), 0);
-        lldp_get_port_info(port_node, port);
-
-        lldp_get_neighbor_info(port_node, if_name);
-
-        // fix dest-mac-address
+        lldp_get_port_info(parent, interface);
     }
 
 error:
@@ -316,27 +427,19 @@ static int lldp_oper_subscribe_cb(sr_session_ctx_t *session, uint32_t sub_id,
     sr_release_context(sr_session_get_connection(session));
 
     rc = lyd_new_path(NULL, ly_ctx, LLDP_ROOT_PATH, NULL, 0, &root);
-    if (rc) {
-        goto error;
-    }
+    if (rc != SR_ERR_OK)
+        return SR_ERR_CALLBACK_FAILED;
 
-    if (!strcmp(request_xpath, LLDP_ROOT_PATH "/local-system-data")) {
+    rc = lldp_get_local_system_data(root);
+    if (rc != SR_ERR_OK)
+        return SR_ERR_CALLBACK_FAILED;
 
-        lldp_get_local_system_data(root);
-    }
-
-    if (!strcmp(request_xpath, LLDP_ROOT_PATH)) {
-
-        lldp_get_local_system_data(root);
-        lldp_get_interfaces(root);
-    }
+    rc = lldp_get_interfaces(root);
+    if (rc != SR_ERR_OK)
+        return SR_ERR_CALLBACK_FAILED;
 
     *parent = root;
-
     return SR_ERR_OK;
-
-error:
-    return rc;
 }
 
 static bool lldp_node_updated(const struct lyd_node *node)
