@@ -84,6 +84,16 @@ struct gptp_port_instance port_info_g[MAX_INDICES];
 #endif
 
 #ifdef __linux__
+#define PREPARE_PORT_XPATH_WITH_CNTR(instance_path, instance_index, port_index, ds, cntr_name, nodename) {\
+        snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/ports/port[port-index='%d']/%s/%s/%s", instance_path, instance_index, port_index, ds, cntr_name, nodename); \
+}
+#else
+#define PREPARE_PORT_XPATH_WITH_CNTR(instance_path, instance_index, port_index, ds, cntr_name, nodename) {\
+        snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%ld']/ports/port[port-index='%d']/%s/%s/%s", instance_path, instance_index, port_index, ds, cntr_name, nodename); \
+}
+#endif
+
+#ifdef __linux__
 #define PREPARE_XPATH(instance_path, instance_index,ds,nodename) { \
         snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/%s/%s",instance_path,instance_index,ds,nodename); \
 }
@@ -520,23 +530,53 @@ int config_gptp(sr_val_t *value,char *nodename, const char *ds_name,
 		goto err;
 	}
 
-	if ((id = genavb_mobj_gptp_node_id("instance", ds_name)) < 0) {
-		LOG_ERR(" %s: failed at line %d for ds_name %s",__FUNCTION__, __LINE__,ds_name);
-		goto err;
-	}
+	if (!is_port) {
+		if ((id = genavb_mobj_gptp_node_id("instance", ds_name)) < 0) {
+			LOG_ERR(" %s: genavb_mobj_gptp_node_id for failed ds %s",__FUNCTION__,ds_name);
+			goto err;
+		}
 
-	if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-		goto err;
-	}
+		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+	} else {
+		if ((id = genavb_mobj_gptp_node_id("instance", "ports")) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
 
-	if (is_port) {
-		if ((id = genavb_mobj_gptp_node_id(ds_name, "port-id")) < 0) {
+		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+
+		if ((id = genavb_mobj_gptp_node_id("ports", "port")) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+
+		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+
+		if ((id = genavb_mobj_gptp_node_id("port", "port-index")) < 0) {
 			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
 			goto err;
 		}
 
 		if (genavb_mobj_cmd_set_list_index(&cmd, id, port_id) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+
+		if ((id = genavb_mobj_gptp_node_id("ports", ds_name)) < 0) {
+			LOG_ERR(" %s: failed at line %d ds_name=%s",__FUNCTION__, __LINE__, ds_name);
+			goto err;
+		}
+
+		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
 			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
 			goto err;
 		}
@@ -567,6 +607,18 @@ int config_gptp(sr_val_t *value,char *nodename, const char *ds_name,
 	}
 
 	if (is_cntr_present) {
+		if (genavb_mobj_cmd_end_node(&cmd) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+	}
+
+	if (is_port) {
+		if (genavb_mobj_cmd_end_node(&cmd) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+
 		if (genavb_mobj_cmd_end_node(&cmd) < 0) {
 			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
 			goto err;
@@ -782,7 +834,6 @@ int gptp_parse(sr_session_ctx_t *session, const char *path, bool abort)
 	const struct lysc_node *ds = NULL;
 	bool is_cntr_present;
 
-
 	rc = sr_get_changes_iter(session, path, &it);
 	if (rc != SR_ERR_OK) {
 		sr_session_set_error_message(session, "Get changes from %s failed", path);
@@ -840,7 +891,7 @@ int gptp_parse(sr_session_ctx_t *session, const char *path, bool abort)
 			goto err;
 		}
 
-		if (!strcmp(parent->name,"clock-quality")) {
+		if (!strcmp(parent->name,"clock-quality") || !strcmp(parent->name,"current-time")) {
 			ds = parent->parent;
 			is_cntr_present = 1;
 		} else {
@@ -881,6 +932,7 @@ int gptp_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	char xpath[XPATH_MAX_LEN] = {0,};
 
 	RETURN_IF_NOT_DEFAULT_EV(event);
+
 	LOG_DBG(" gPTP: start callback(%d): %s", (int)event, path);
 
 	snprintf(xpath, XPATH_MAX_LEN, "%s//*", PTP_INSTANCE_XPATH);
@@ -902,6 +954,7 @@ int gptp_port_subtree_change_cb(sr_session_ctx_t *session, uint32_t sub_id,
 	char xpath[XPATH_MAX_LEN] = {0,};
 
 	RETURN_IF_NOT_DEFAULT_EV(event);
+
 	LOG_DBG(" gPTP: start port callback(%d): %s", (int)event, path);
 
 	snprintf(xpath, XPATH_MAX_LEN, "%s//*", PTP_PORT_XPATH);
@@ -1105,24 +1158,54 @@ int gptp_get_node_value(char *str, uint8_t size, const char *ds_name,
 		goto err;
 	}
 
-	if ((id = genavb_mobj_gptp_node_id("instance", ds_name)) < 0) {
-		LOG_ERR(" %s: genavb_mobj_gptp_node_id for failed ds %s",__FUNCTION__,ds_name);
-		goto err;
-	}
+	if (!is_port) {
+		if ((id = genavb_mobj_gptp_node_id("instance", ds_name)) < 0) {
+			LOG_ERR(" %s: genavb_mobj_gptp_node_id for failed ds %s",__FUNCTION__,ds_name);
+			goto err;
+		}
 
-	if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-		goto err;
-	}
+		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+	} else {
+		if ((id = genavb_mobj_gptp_node_id("instance", "ports")) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
 
-	if (is_port) {
-		if ((id = genavb_mobj_gptp_node_id(ds_name, "port-id")) < 0) {
+		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+
+		if ((id = genavb_mobj_gptp_node_id("ports", "port")) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+
+		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+
+		if ((id = genavb_mobj_gptp_node_id("port", "port-index")) < 0) {
 		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
 			goto err;
 		}
 
 		if (genavb_mobj_cmd_set_list_index(&cmd, id, port_id) < 0) {
 		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+
+		if ((id = genavb_mobj_gptp_node_id("ports", ds_name)) < 0) {
+			LOG_ERR(" %s: failed at line %d ds_name=%s",__FUNCTION__, __LINE__, ds_name);
+			goto err;
+		}
+
+		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
 			goto err;
 		}
 	}
@@ -1163,6 +1246,18 @@ int gptp_get_node_value(char *str, uint8_t size, const char *ds_name,
 		goto err;
 	}
 
+	if (is_port) {
+		if (genavb_mobj_cmd_end_node(&cmd) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+
+		if (genavb_mobj_cmd_end_node(&cmd) < 0) {
+			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			goto err;
+		}
+	}
+
 	if (genavb_mobj_cmd_end_node(&cmd) < 0) {
 		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
 		goto err;
@@ -1188,28 +1283,46 @@ int gptp_get_node_value(char *str, uint8_t size, const char *ds_name,
 
 	/* instance node header */
 	data = get_node_header((uint8_t *)&get_response, &node_id, &total_length, &status);
-	LOG_DBG("id %u total_length %u status %u", node_id, total_length, status);
+	LOG_INF("id %u total_length %u status %u", node_id, total_length, status);
 
 	/* instance entry key header */
 	data = get_node_header(data, &node_id, &length, &status);
+	LOG_INF("id %u length %u status %u", node_id, length, status);
 	data = get_node_next(data, length);
-	/* port stats node header */
-	data = get_node_header(data, &node_id, &length, &status);
-	LOG_DBG("id %u length %u status %u", node_id, length, status);
 
 	if (is_port) {
+		/* ports node header */
+		data = get_node_header(data, &node_id, &length, &status);
+		LOG_INF("id %u length %u status %u", node_id, length, status);
+
+		/* port node header */
+		data = get_node_header(data, &node_id, &length, &status);
+		LOG_INF("id %u length %u status %u", node_id, length, status);
+
 		/* port entry key header */
 		data = get_node_header(data, &node_id, &length, &status);
+		LOG_INF("id %u length %u status %u", node_id, length, status);
 		data = get_node_next(data, length);
 	}
 
+	/* container ds */
 	data = get_node_header(data, &node_id, &length, &status);
-	LOG_DBG(" data %u id %u length %u status %u", data[0], node_id, length, status);
-	for (int i = 0; i < length; i++)
-		LOG_DBG(" data[%u] %u ", i, data[i]);
+	LOG_INF("id %u length %u status %u", node_id, length, status);
+
+	if (is_cntr_present) {
+		/* optional sub-container header */
+		data = get_node_header(data, &node_id, &length, &status);
+		LOG_INF("id %u length %u status %u", node_id, length, status);
+	}
+
+	/* leaf header */
+	data = get_node_header(data, &node_id, &length, &status);
+	LOG_INF("id %u length %u status %u", node_id, length, status);
 	if (!status) {
+		for (int i = 0; i < length - 2; i++)
+			LOG_INF(" data[%u] %u ", i, data[i]);
 		if (prepare_output_string_from_data(str, size, data, snode,data_type,string_size) != 0) {
-			LOG_DBG(" prepare_output_string_from_data failed");
+			LOG_ERR(" prepare_output_string_from_data failed");
 			goto err;
 		}
 		return 0;
@@ -1262,12 +1375,17 @@ int gptp_write_port_nodes(struct lyd_node **root, const struct ly_ctx *ctx,
 	char str[MAX_SIZE];
 	char name[64];
 
-	if (!strcmp(ds->name,"port-ds")) {
-		get_node_name_from_lysc_path(snode,ds->name, name);
-		PREPARE_PORT_XPATH(PTP_INSTANCE_XPATH, instance_id,port_id, ds->name,name);
-	} else if (!strcmp(ds->name,"port-statistics-ds")) {
-		get_node_name_from_lysc_path(snode,"port", name);
-		PREPARE_PORT_XPATH(PTP_INSTANCE_XPATH, instance_id,port_id, name,snode->name);
+	if (!strcmp(ds->name, "port-ds")) {
+		if (is_cntr_present) {
+			get_node_name_from_lysc_path(snode, cntr_name, name);
+			PREPARE_PORT_XPATH_WITH_CNTR(PTP_INSTANCE_XPATH, instance_id, port_id, ds->name, cntr_name, name);
+		} else {
+			get_node_name_from_lysc_path(snode, ds->name, name);
+			PREPARE_PORT_XPATH(PTP_INSTANCE_XPATH, instance_id, port_id, ds->name, name);
+		}
+	} else if (!strcmp(ds->name, "port-statistics-ds")) {
+		get_node_name_from_lysc_path(snode, "port", name);
+		PREPARE_PORT_XPATH(PTP_INSTANCE_XPATH, instance_id, port_id, name, snode->name);
 	} else {
 		goto cleanup;
 	}
@@ -1292,7 +1410,6 @@ int gptp_write_instance_nodes(struct lyd_node **root, const struct ly_ctx *ctx,
 	char xpath[XPATH_MAX_LEN] = {};
 	char name[64];
 	char str[MAX_SIZE];
-
 
 	if (is_cntr_present) {
 		get_node_name_from_lysc_path(snode,cntr_name, name);
@@ -1322,15 +1439,20 @@ int traverse_instance_schema_nodes_and_write_data(const struct ly_ctx *ctx,struc
 	const struct lysc_node *ds = NULL; 
 	bool is_cntr_present;
 
-	if ((snode->flags & LYS_CONFIG_R) && (snode->nodetype & LYS_LEAF)) {
-		//LOG_DBG(" LEAF snode %s, nodetype %d",snode->name,snode->nodetype);
+	LOG_INF(" LEAF snode %s, nodetype %d parent %s",snode->name, snode->nodetype, snode->parent->name);
 
+	if ((snode->flags & LYS_CONFIG_R) && (snode->nodetype & LYS_LEAF)) {
 		parent = snode->parent; 
 		while (parent && parent->nodetype != LYS_CONTAINER) {
 			parent = parent->parent;
 		}
 
-		if (!strcmp(parent->name,"parent-port-identity") || !strcmp(parent->name,"grandmaster-clock-quality")) {
+		LOG_INF(" parent %s", parent->name);
+
+		if (!strcmp(parent->name,"parent-port-identity") ||
+			!strcmp(parent->name,"grandmaster-clock-quality") ||
+			!strcmp(parent->name,"current-time") ||
+			!strcmp(parent->name,"clock-quality")) {
 			ds = parent->parent;
 			is_cntr_present = 1;
 		} else {
