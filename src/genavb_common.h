@@ -7,18 +7,8 @@
 #ifndef _SYSREPO_GENAVB_COMMON_H_
 #define _SYSREPO_GENAVB_COMMON_H_
 
-#define SR_GET_SUBSCR(mod_name, xpath, cb)												\
-	rc = sr_oper_get_subscribe(session, mod_name, xpath, cb, NULL, 0, &subscription);	\
-	if (rc != SR_ERR_OK) {																\
-		LOG_ERR("Failed to subscribe for \"%s\" (%s).",									\
-			xpath, sr_strerror(rc)); 													\
-		goto error;																		\
-	} else { 																			\
-		LOG_INF("Subscribed get for %s", xpath);										\
-	}
-
 #define DEFAULT_SR_EVENT1 SR_EV_CHANGE
-#define DEFAULT_SR_EVENT2 SR_EV_ENABLED
+#define DEFAULT_SR_EVENT2 SR_EV_DONE
 #define RETURN_IF_NOT_DEFAULT_EV(ev)											\
 	do {																		\
 		if (((ev) != (DEFAULT_SR_EVENT1)) && ((ev) != (DEFAULT_SR_EVENT2))) {	\
@@ -51,17 +41,6 @@
 #define LOG_WRN(fmt, args...) PRINTF("[WRN]" fmt "\n", ##args)
 #define LOG_INF(fmt, args...) PRINTF("[INF]" fmt "\n", ##args)
 #define LOG_DBG(fmt, args...) PRINTF("[DBG]" fmt "\n", ##args)
-
-#define SR_CONFIG_SUBSCR(mod_name, xpath, cb, prio)								\
-	rc = sr_module_change_subscribe(session, mod_name, xpath, cb, NULL, prio,	\
-					SR_SUBSCR_ENABLED, subscription);							\
-	if (rc != SR_ERR_OK) {														\
-		LOG_ERR("Failed to subscribe for \"%s\" (%s).",							\
-			xpath, sr_strerror(rc));											\
-		return rc;																\
-	} else {																	\
-		LOG_INF("Subscribed changes for %s", xpath);							\
-	}
 
 #define XPATH_IFACE   "/ietf-interfaces:interfaces/interface"
 #define XPATH_BR_PORT "/ieee802-dot1q-bridge:bridge-port"

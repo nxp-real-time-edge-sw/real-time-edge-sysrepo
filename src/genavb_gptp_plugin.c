@@ -502,7 +502,6 @@ int config_gptp(sr_val_t *value,char *nodename, const char *ds_name,
 	struct genavb_msg_managed_set_response set_response;
 	struct genavb_mobj_cmd cmd;
 	uint16_t buf[BUF_LEN];
-
 	int ret = -1;
 	const char *name = ds_name;
 
@@ -1656,6 +1655,8 @@ int sysrepo_genavb_gptp_init(sr_session_ctx_t *session, sr_subscription_ctx_t **
 {
 	int rc;
 
+	gptp_identity_refs_init();
+
 	/* Below two macros return error incase of failure while subscribing */
 
 	/* Subscribe to gPTP subtree */
@@ -1686,8 +1687,6 @@ int sysrepo_genavb_gptp_init(sr_session_ctx_t *session, sr_subscription_ctx_t **
 	} else {
 		LOG_INF("Subscribed get for %s", PTP_INSTANCES_XPATH);
 	}
-
-	gptp_identity_refs_init();
 
 error:
 	return rc;

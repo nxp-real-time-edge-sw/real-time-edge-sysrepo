@@ -66,7 +66,7 @@
 
 #define SR_CONFIG_SUBSCR(mod_name, xpath, cb, prio)							\
     rc = sr_module_change_subscribe(session, mod_name, xpath, cb, NULL, prio, 	\
-           	SR_SUBSCR_ENABLED | SR_SUBSCR_DONE_ONLY, &subscription);		\
+           	SR_SUBSCR_DONE_ONLY, &subscription);		                    \
     if (rc != SR_ERR_OK) {													\
         LOG_ERR("Failed to subscribe for \"%s\" (%s).",	                    \
                 xpath, sr_strerror(rc));									\
