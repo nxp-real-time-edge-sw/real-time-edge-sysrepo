@@ -14,27 +14,27 @@ struct genavb_control_handle *ctrl_h = NULL;
 
 uint8_t *get_response_header(uint8_t *buf, uint16_t *id, uint16_t *length, uint16_t *status)
 {
-        *id = ((uint16_t *)buf)[0];
-        *length = ((uint16_t *)buf)[1];
-        *status = ((uint16_t *)buf)[2];
+	*id = ((uint16_t *)buf)[0];
+	*length = ((uint16_t *)buf)[1];
+	*status = ((uint16_t *)buf)[2];
 
-        buf += 6;
+	buf += 6;
 
-        return buf;
+	return buf;
 }
 
 uint8_t *get_node_next(uint8_t *buf, uint16_t length)
 {
-        buf += length - 2;
+	buf += length - 2;
 
-        return buf;
+	return buf;
 }
 
 uint8_t *get_node_header(uint8_t *buf, uint16_t *id, uint16_t *length, uint16_t *status)
 {
-        buf = get_response_header(buf, id, length, status);
+	buf = get_response_header(buf, id, length, status);
 
-        return buf;
+	return buf;
 }
 
 void *gptp_get_genavb_ctrl(void)

@@ -8,7 +8,6 @@
 
 static sr_subscription_ctx_t *subscription = NULL;
 
-//#define PLG_NAME    "genavb-ptp"
 #define PTP_MODULE     "ieee1588-ptp-tt"
 #define PTP_ROOT_XPATH       "/ieee1588-ptp-tt:ptp"
 #define PTP_INSTANCES_XPATH  "/ieee1588-ptp-tt:ptp/instances"
@@ -74,11 +73,11 @@ uint8_t num_instances_g = 0;
 struct gptp_port_instance port_info_g[MAX_INDICES];
 
 #ifdef __linux__
-#define PREPARE_PORT_XPATH(instance_path, instance_index,port_index, ds,nodename) {\
+#define PREPARE_PORT_XPATH(instance_path, instance_index, port_index, ds, nodename) {\
         snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/ports/port[port-index='%d']/%s/%s",instance_path,instance_index,port_index,ds,nodename); \
 }
 #else
-#define PREPARE_PORT_XPATH(instance_path, instance_index,port_index, ds,nodename) {\
+#define PREPARE_PORT_XPATH(instance_path, instance_index, port_index, ds, nodename) {\
         snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%ld']/ports/port[port-index='%d']/%s/%s",instance_path,instance_index,port_index,ds,nodename); \
 }
 #endif
@@ -94,22 +93,22 @@ struct gptp_port_instance port_info_g[MAX_INDICES];
 #endif
 
 #ifdef __linux__
-#define PREPARE_XPATH(instance_path, instance_index,ds,nodename) { \
-        snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/%s/%s",instance_path,instance_index,ds,nodename); \
+#define PREPARE_XPATH(instance_path, instance_index, ds, nodename) { \
+        snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/%s/%s", instance_path, instance_index, ds, nodename); \
 }
 #else
-#define PREPARE_XPATH(instance_path, instance_index,ds,nodename) { \
-        snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%ld']/%s/%s",instance_path,instance_index,ds,nodename); \
+#define PREPARE_XPATH(instance_path, instance_index, ds, nodename) { \
+        snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%ld']/%s/%s", instance_path, instance_index, ds, nodename); \
 }
 #endif
 
 #ifdef __linux__
-#define PREPARE_XPATH_WITH_CNTR(instance_path, instance_index,ds,cntr_name,nodename) { \
-        snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/%s/%s/%s",instance_path,instance_index,ds,cntr_name,nodename); \
+#define PREPARE_XPATH_WITH_CNTR(instance_path, instance_index, ds, cntr_name, nodename) { \
+        snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/%s/%s/%s", instance_path, instance_index, ds, cntr_name, nodename); \
 }
 #else
-#define PREPARE_XPATH_WITH_CNTR(instance_path, instance_index,ds,cntr_name,nodename) { \
-        snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%ld']/%s/%s/%s",instance_path,instance_index,ds,cntr_name,nodename); \
+#define PREPARE_XPATH_WITH_CNTR(instance_path, instance_index, ds, cntr_name,nodename) { \
+        snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%ld']/%s/%s/%s", instance_path, instance_index, ds, cntr_name, nodename); \
 }
 #endif
 
@@ -133,34 +132,34 @@ char port_state_string[10][32] = {"",
 void gptp_clock_class_identity_ref_init()
 {
 	/* clock-class identity ref to value mapping entries */
-	strcpy(clock_class_identity_ref_g[0].identity_ref,"ieee1588-ptp-tt:cc-primary-sync");
+	strcpy(clock_class_identity_ref_g[0].identity_ref, "ieee1588-ptp-tt:cc-primary-sync");
 	clock_class_identity_ref_g[0].value = 6;
 
-	strcpy(clock_class_identity_ref_g[1].identity_ref,"ieee1588-ptp-tt:cc-primary-sync-lost");
+	strcpy(clock_class_identity_ref_g[1].identity_ref, "ieee1588-ptp-tt:cc-primary-sync-lost");
 	clock_class_identity_ref_g[1].value = 7;
 
-	strcpy(clock_class_identity_ref_g[2].identity_ref,"ieee1588-ptp-tt:cc-application-specific-sync");
+	strcpy(clock_class_identity_ref_g[2].identity_ref, "ieee1588-ptp-tt:cc-application-specific-sync");
 	clock_class_identity_ref_g[2].value = 13;
 
-	strcpy(clock_class_identity_ref_g[3].identity_ref,"ieee1588-ptp-tt:cc-application-specific-sync-lost");
+	strcpy(clock_class_identity_ref_g[3].identity_ref, "ieee1588-ptp-tt:cc-application-specific-sync-lost");
 	clock_class_identity_ref_g[3].value = 14;
 
-	strcpy(clock_class_identity_ref_g[4].identity_ref,"ieee1588-ptp-tt:cc-primary-sync-alternative-a");
+	strcpy(clock_class_identity_ref_g[4].identity_ref, "ieee1588-ptp-tt:cc-primary-sync-alternative-a");
 	clock_class_identity_ref_g[4].value = 52;
 
-	strcpy(clock_class_identity_ref_g[5].identity_ref,"ieee1588-ptp-tt:cc-application-specific-alternative-a");
+	strcpy(clock_class_identity_ref_g[5].identity_ref, "ieee1588-ptp-tt:cc-application-specific-alternative-a");
 	clock_class_identity_ref_g[5].value = 58;
 
-	strcpy(clock_class_identity_ref_g[6].identity_ref,"ieee1588-ptp-tt:cc-primary-sync-alternative-b");
+	strcpy(clock_class_identity_ref_g[6].identity_ref, "ieee1588-ptp-tt:cc-primary-sync-alternative-b");
 	clock_class_identity_ref_g[6].value = 187;
 
-	strcpy(clock_class_identity_ref_g[7].identity_ref,"ieee1588-ptp-tt:cc-application-specific-alternative-b");
+	strcpy(clock_class_identity_ref_g[7].identity_ref, "ieee1588-ptp-tt:cc-application-specific-alternative-b");
 	clock_class_identity_ref_g[7].value = 193;
 
-	strcpy(clock_class_identity_ref_g[8].identity_ref,"ieee1588-ptp-tt:cc-default");
+	strcpy(clock_class_identity_ref_g[8].identity_ref, "ieee1588-ptp-tt:cc-default");
 	clock_class_identity_ref_g[8].value = 248;
 
-	strcpy(clock_class_identity_ref_g[9].identity_ref,"ieee1588-ptp-tt:cc-time-receiver-only");
+	strcpy(clock_class_identity_ref_g[9].identity_ref, "ieee1588-ptp-tt:cc-time-receiver-only");
 	clock_class_identity_ref_g[9].value = 255;
 
 	return;
@@ -175,9 +174,9 @@ int gptp_clock_class_get_identity_ref_from_value(char *str, uint8_t value)
 {
 	int i;
 
-	for (i = 0;i < MAX_CLOCK_CLASS_IDENTITY_REFS;i++) {
+	for (i = 0; i < MAX_CLOCK_CLASS_IDENTITY_REFS; i++) {
 		if (value == clock_class_identity_ref_g[i].value) {
-			strcpy(str,clock_class_identity_ref_g[i].identity_ref);
+			strcpy(str, clock_class_identity_ref_g[i].identity_ref);
 			return 0;
 		}
 	}
@@ -194,8 +193,8 @@ int gptp_clock_class_get_value_from_identity_ref(char *str, uint8_t *value)
 {
 	int i;
 
-	for (i = 0;i < MAX_CLOCK_CLASS_IDENTITY_REFS;i++) {
-		if (!strcmp(str,clock_class_identity_ref_g[i].identity_ref)) {
+	for (i = 0; i < MAX_CLOCK_CLASS_IDENTITY_REFS; i++) {
+		if (!strcmp(str, clock_class_identity_ref_g[i].identity_ref)) {
 			*value = clock_class_identity_ref_g[i].value;
 			return 0;
 		}
@@ -208,85 +207,85 @@ int gptp_clock_class_get_value_from_identity_ref(char *str, uint8_t *value)
 void gptp_clock_accuracy_identity_ref_init()
 {
 	/* clock-accuracy identity ref to value mapping entries */
-	strcpy(clock_accuracy_identity_ref_g[0].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-1000-fs");
+	strcpy(clock_accuracy_identity_ref_g[0].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-1000-fs");
 	clock_accuracy_identity_ref_g[0].value = 0x17;
 
-	strcpy(clock_accuracy_identity_ref_g[1].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-2500-fs");
+	strcpy(clock_accuracy_identity_ref_g[1].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-2500-fs");
 	clock_accuracy_identity_ref_g[1].value = 0x18;
 
-	strcpy(clock_accuracy_identity_ref_g[2].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-10-ps");
+	strcpy(clock_accuracy_identity_ref_g[2].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-10-ps");
 	clock_accuracy_identity_ref_g[2].value = 0x19;
 
-	strcpy(clock_accuracy_identity_ref_g[3].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-25ps");
+	strcpy(clock_accuracy_identity_ref_g[3].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-25ps");
 	clock_accuracy_identity_ref_g[3].value = 0x1A;
 
-	strcpy(clock_accuracy_identity_ref_g[4].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-100-ps");
+	strcpy(clock_accuracy_identity_ref_g[4].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-100-ps");
 	clock_accuracy_identity_ref_g[4].value = 0x1B;
 
-	strcpy(clock_accuracy_identity_ref_g[5].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-250-ps");
+	strcpy(clock_accuracy_identity_ref_g[5].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-250-ps");
 	clock_accuracy_identity_ref_g[5].value = 0x1C;
 
-	strcpy(clock_accuracy_identity_ref_g[6].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-1000-ps");
+	strcpy(clock_accuracy_identity_ref_g[6].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-1000-ps");
 	clock_accuracy_identity_ref_g[6].value = 0x1D;
 
-	strcpy(clock_accuracy_identity_ref_g[7].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-2500-ps");
+	strcpy(clock_accuracy_identity_ref_g[7].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-2500-ps");
 	clock_accuracy_identity_ref_g[7].value = 0x1E;
 
-	strcpy(clock_accuracy_identity_ref_g[8].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-10-ns");
+	strcpy(clock_accuracy_identity_ref_g[8].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-10-ns");
 	clock_accuracy_identity_ref_g[8].value = 0x1F;
 
-	strcpy(clock_accuracy_identity_ref_g[9].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-25-ns");
+	strcpy(clock_accuracy_identity_ref_g[9].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-25-ns");
 	clock_accuracy_identity_ref_g[9].value = 0x20;
 
-	strcpy(clock_accuracy_identity_ref_g[10].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-100-ns");
+	strcpy(clock_accuracy_identity_ref_g[10].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-100-ns");
 	clock_accuracy_identity_ref_g[10].value = 0x21;
 
-	strcpy(clock_accuracy_identity_ref_g[11].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-250-ns");
+	strcpy(clock_accuracy_identity_ref_g[11].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-250-ns");
 	clock_accuracy_identity_ref_g[11].value = 0x22;
 
-	strcpy(clock_accuracy_identity_ref_g[12].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-1000-ns");
+	strcpy(clock_accuracy_identity_ref_g[12].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-1000-ns");
 	clock_accuracy_identity_ref_g[12].value = 0x23;
 
-	strcpy(clock_accuracy_identity_ref_g[13].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-2500-ns");
+	strcpy(clock_accuracy_identity_ref_g[13].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-2500-ns");
 	clock_accuracy_identity_ref_g[13].value = 0x24;
 
-	strcpy(clock_accuracy_identity_ref_g[14].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-10-us");
+	strcpy(clock_accuracy_identity_ref_g[14].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-10-us");
 	clock_accuracy_identity_ref_g[14].value = 0x25;
 
-	strcpy(clock_accuracy_identity_ref_g[15].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-25-us");
+	strcpy(clock_accuracy_identity_ref_g[15].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-25-us");
 	clock_accuracy_identity_ref_g[15].value = 0x26;
 
-	strcpy(clock_accuracy_identity_ref_g[16].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-100-us");
+	strcpy(clock_accuracy_identity_ref_g[16].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-100-us");
 	clock_accuracy_identity_ref_g[16].value = 0x27;
 
-	strcpy(clock_accuracy_identity_ref_g[17].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-250-us");
+	strcpy(clock_accuracy_identity_ref_g[17].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-250-us");
 	clock_accuracy_identity_ref_g[17].value = 0x28;
 
-	strcpy(clock_accuracy_identity_ref_g[18].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-1000-us");
+	strcpy(clock_accuracy_identity_ref_g[18].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-1000-us");
 	clock_accuracy_identity_ref_g[18].value = 0x29;
 
-	strcpy(clock_accuracy_identity_ref_g[19].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-2500-us");
+	strcpy(clock_accuracy_identity_ref_g[19].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-2500-us");
 	clock_accuracy_identity_ref_g[19].value = 0x2A;
 
-	strcpy(clock_accuracy_identity_ref_g[20].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-10-ms");
+	strcpy(clock_accuracy_identity_ref_g[20].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-10-ms");
 	clock_accuracy_identity_ref_g[20].value = 0x2B;
 
-	strcpy(clock_accuracy_identity_ref_g[21].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-25-ms");
+	strcpy(clock_accuracy_identity_ref_g[21].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-25-ms");
 	clock_accuracy_identity_ref_g[21].value = 0x2C;
 
-	strcpy(clock_accuracy_identity_ref_g[22].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-100-ms");
+	strcpy(clock_accuracy_identity_ref_g[22].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-100-ms");
 	clock_accuracy_identity_ref_g[22].value = 0x2D;
 
-	strcpy(clock_accuracy_identity_ref_g[23].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-250-ms");
+	strcpy(clock_accuracy_identity_ref_g[23].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-250-ms");
 	clock_accuracy_identity_ref_g[23].value = 0x2E;
 
-	strcpy(clock_accuracy_identity_ref_g[24].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-1-s");
+	strcpy(clock_accuracy_identity_ref_g[24].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-1-s");
 	clock_accuracy_identity_ref_g[24].value = 0x2F;
 
-	strcpy(clock_accuracy_identity_ref_g[25].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-10-s");
+	strcpy(clock_accuracy_identity_ref_g[25].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-10-s");
 	clock_accuracy_identity_ref_g[25].value = 0x30;
 
-	strcpy(clock_accuracy_identity_ref_g[26].identity_ref,"ieee1588-ptp-tt:ca-time-accurate-to-gt-10-s");
+	strcpy(clock_accuracy_identity_ref_g[26].identity_ref, "ieee1588-ptp-tt:ca-time-accurate-to-gt-10-s");
 	clock_accuracy_identity_ref_g[26].value = 0x31;
 
 	return;
@@ -301,9 +300,9 @@ int gptp_clock_accuracy_get_identity_ref_from_value(char *str, uint8_t value)
 {
 	int i;
 
-	for (i = 0;i < MAX_CLOCK_ACCURACY_IDENTITY_REFS;i++) {
+	for (i = 0; i < MAX_CLOCK_ACCURACY_IDENTITY_REFS; i++) {
 		if (value == clock_accuracy_identity_ref_g[i].value) {
-			strcpy(str,clock_accuracy_identity_ref_g[i].identity_ref);
+			strcpy(str, clock_accuracy_identity_ref_g[i].identity_ref);
 			return 0;
 		}
 	}
@@ -320,8 +319,8 @@ int gptp_clock_accuracy_get_value_from_identity_ref(char *str, uint8_t *value)
 {
 	int i;
 
-	for (i = 0;i < MAX_CLOCK_ACCURACY_IDENTITY_REFS;i++) {
-		if (!strcmp(str,clock_accuracy_identity_ref_g[i].identity_ref)) {
+	for (i = 0; i < MAX_CLOCK_ACCURACY_IDENTITY_REFS; i++) {
+		if (!strcmp(str, clock_accuracy_identity_ref_g[i].identity_ref)) {
 			*value = clock_accuracy_identity_ref_g[i].value;
 			return 0;
 		}
@@ -334,31 +333,31 @@ int gptp_clock_accuracy_get_value_from_identity_ref(char *str, uint8_t *value)
 void gptp_time_source_identity_ref_init(void)
 {
 	/* time-source identity ref to value mapping entries */
-	strcpy(time_source_identity_ref_g[0].identity_ref,"ieee1588-ptp-tt:atomic-clock");
+	strcpy(time_source_identity_ref_g[0].identity_ref, "ieee1588-ptp-tt:atomic-clock");
 	time_source_identity_ref_g[0].value = 0x10;
 
-	strcpy(time_source_identity_ref_g[1].identity_ref,"ieee1588-ptp-tt:gnss");
+	strcpy(time_source_identity_ref_g[1].identity_ref, "ieee1588-ptp-tt:gnss");
 	time_source_identity_ref_g[1].value = 0x20;
 
-	strcpy(time_source_identity_ref_g[2].identity_ref,"ieee1588-ptp-tt:terrestrial-radio");
+	strcpy(time_source_identity_ref_g[2].identity_ref, "ieee1588-ptp-tt:terrestrial-radio");
 	time_source_identity_ref_g[2].value = 0x30;
 
-	strcpy(time_source_identity_ref_g[3].identity_ref,"ieee1588-ptp-tt:serial-time-code");
+	strcpy(time_source_identity_ref_g[3].identity_ref, "ieee1588-ptp-tt:serial-time-code");
 	time_source_identity_ref_g[3].value = 0x39;
 
-	strcpy(time_source_identity_ref_g[4].identity_ref,"ieee1588-ptp-tt:ptp");
+	strcpy(time_source_identity_ref_g[4].identity_ref, "ieee1588-ptp-tt:ptp");
 	time_source_identity_ref_g[4].value = 0x40;
 
-	strcpy(time_source_identity_ref_g[5].identity_ref,"ieee1588-ptp-tt:ntp");
+	strcpy(time_source_identity_ref_g[5].identity_ref, "ieee1588-ptp-tt:ntp");
 	time_source_identity_ref_g[5].value = 0x50;
 
-	strcpy(time_source_identity_ref_g[6].identity_ref,"ieee1588-ptp-tt:hand-set");
+	strcpy(time_source_identity_ref_g[6].identity_ref, "ieee1588-ptp-tt:hand-set");
 	time_source_identity_ref_g[6].value = 0x60;
 
-	strcpy(time_source_identity_ref_g[7].identity_ref,"ieee1588-ptp-tt:other");
+	strcpy(time_source_identity_ref_g[7].identity_ref, "ieee1588-ptp-tt:other");
 	time_source_identity_ref_g[7].value = 0x90;
 
-	strcpy(time_source_identity_ref_g[8].identity_ref,"ieee1588-ptp-tt:internal-oscillator");
+	strcpy(time_source_identity_ref_g[8].identity_ref, "ieee1588-ptp-tt:internal-oscillator");
 	time_source_identity_ref_g[8].value = 0xA0;
 
 	return;
@@ -373,9 +372,9 @@ int gptp_time_source_get_identity_ref_from_value(char *str, uint8_t value)
 {
 	int i;
 
-	for (i = 0;i < MAX_TIME_SOURCE_IDENTITY_REFS;i++) {
+	for (i = 0; i < MAX_TIME_SOURCE_IDENTITY_REFS; i++) {
 		if (value == time_source_identity_ref_g[i].value) {
-			strcpy(str,time_source_identity_ref_g[i].identity_ref);
+			strcpy(str, time_source_identity_ref_g[i].identity_ref);
 			return 0;
 		}
 	}
@@ -392,8 +391,8 @@ int gptp_time_source_get_value_from_identity_ref(char *str, uint8_t *value)
 {
 	int i;
 
-	for (i = 0;i < MAX_TIME_SOURCE_IDENTITY_REFS;i++) {
-		if (!strcmp(str,time_source_identity_ref_g[i].identity_ref)) {
+	for (i = 0; i < MAX_TIME_SOURCE_IDENTITY_REFS; i++) {
+		if (!strcmp(str, time_source_identity_ref_g[i].identity_ref)) {
 			*value = time_source_identity_ref_g[i].value;
 			return 0;
 		}
@@ -463,18 +462,17 @@ int gptp_set_leaf_value(char *nodename, const char *ds_name, struct genavb_mobj_
 				goto err;
 			break;
 		case SR_STRING_T:
-			LOG_DBG(" setting node: %s, ds: %s, SR_STRING_T, string: %sd",
-						nodename,ds_name,value->data.string_val);
+			LOG_DBG(" setting node: %s, ds: %s, SR_STRING_T, string: %sd", nodename,ds_name,value->data.string_val);
 			break;
 		case SR_IDENTITYREF_T:
-			if (!strcmp(nodename,"clock-class")) {
-				if (gptp_clock_class_get_value_from_identity_ref(value->data.identityref_val,&val) != 0)
+			if (!strcmp(nodename, "clock-class")) {
+				if (gptp_clock_class_get_value_from_identity_ref(value->data.identityref_val, &val) != 0)
 					goto err;
-			} else if (!strcmp(nodename,"clock-accuracy")) {
-				if (gptp_clock_accuracy_get_value_from_identity_ref(value->data.identityref_val,&val) != 0)
+			} else if (!strcmp(nodename, "clock-accuracy")) {
+				if (gptp_clock_accuracy_get_value_from_identity_ref(value->data.identityref_val, &val) != 0)
 					goto err;
-			} else if (!strcmp(nodename,"time-source")) {
-				if (gptp_time_source_get_value_from_identity_ref(value->data.identityref_val,&val) != 0)
+			} else if (!strcmp(nodename, "time-source")) {
+				if (gptp_time_source_get_value_from_identity_ref(value->data.identityref_val, &val) != 0)
 					goto err;
 			} else {
 				LOG_ERR(" invalid IDENTITYREF id");
@@ -487,7 +485,7 @@ int gptp_set_leaf_value(char *nodename, const char *ds_name, struct genavb_mobj_
 				goto err;
 			break;
 		default :
-			LOG_DBG(" setting node: %s, ds: %s, default type",nodename,ds_name);
+			LOG_DBG(" setting node: %s, ds: %s, default type", nodename, ds_name);
 			goto err;
 	}
 
@@ -563,40 +561,40 @@ int config_gptp(sr_val_t *value,char *nodename, const char *ds_name,
 
 	if (is_cntr_present) {
 		if (genavb_mobj_cmd_end_node(&cmd) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 	}
 
 	if (is_port) {
 		if (genavb_mobj_cmd_end_node(&cmd) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 
 		if (genavb_mobj_cmd_end_node(&cmd) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 	}
 
 	if (genavb_mobj_cmd_end_node(&cmd) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 		goto err;
 	}
 
 	if (genavb_mobj_cmd_end_node(&cmd) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 		goto err;
 	}
 
 	if (managed_set(gptp_get_genavb_ctrl(), genavb_mobj_cmd_buf(&cmd), genavb_mobj_cmd_len(&cmd), &set_response, sizeof(set_response)) < 0) {
-		LOG_ERR(" %s: failed at line %d, cmd len %d",__FUNCTION__, __LINE__,genavb_mobj_cmd_len(&cmd));
+		LOG_ERR(" %s: failed at line %d, cmd len %d", __FUNCTION__, __LINE__, genavb_mobj_cmd_len(&cmd));
 		goto err;
 	}
 
 	if (genavb_mobj_rsp_check((u_int8_t *)&set_response) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 		goto err;
 	}
 
@@ -614,13 +612,13 @@ void get_actual_node_name_if_augmented(char *name)
 		pch = strtok (name,":");
 		if (pch != NULL) {
 			pch = strtok (NULL, "\0");
-			strcpy(name,pch);
+			strcpy(name, pch);
 		}
 	}
 	return;
 }
 
-int get_data_set_name_based_on_nodename(sr_session_ctx_t *session,sr_val_t *value,const struct lysc_node **parent_out)
+int get_data_set_name_based_on_nodename(sr_session_ctx_t *session,sr_val_t *value, const struct lysc_node **parent_out)
 {
 	struct lysc_node *schema_node = NULL; 
 	struct lysc_node *parent = NULL; 
@@ -634,7 +632,7 @@ int get_data_set_name_based_on_nodename(sr_session_ctx_t *session,sr_val_t *valu
 		return ret;
 	}
 
-	if (lys_find_xpath(ctx,NULL,value->xpath,0,&set) != LY_SUCCESS) {
+	if (lys_find_xpath(ctx, NULL, value->xpath, 0, &set) != LY_SUCCESS) {
 		LOG_ERR(" lys_find_xpath failed");
 		return ret;
 	}
@@ -657,14 +655,14 @@ int get_data_set_name_based_on_nodename(sr_session_ctx_t *session,sr_val_t *valu
 		}
 
 		if (parent && parent->name) {
-			//LOG_DBG(" value->xpath %s, parent->name %s",value->xpath,parent->name);
+			//LOG_DBG(" value->xpath %s, parent->name %s", value->xpath, parent->name);
 			*parent_out = parent;
 			ret = 0;
 			break;
 		}
 	}
 
-	ly_set_free(set,NULL);
+	ly_set_free(set, NULL);
 	return ret;
 }
 
@@ -681,8 +679,8 @@ int gptp_port_parse(sr_session_ctx_t *session, const char *path, bool abort)
 	char *index_instance;
 	uint32_t port_id = 0;
 	uint32_t instance_index = 0;
-        char *nodename = NULL;
-        const struct lysc_node *parent = NULL;
+	char *nodename = NULL;
+	const struct lysc_node *parent = NULL;
 
 	rc = sr_get_changes_iter(session, path, &it);
 	if (rc != SR_ERR_OK) {
@@ -712,25 +710,23 @@ int gptp_port_parse(sr_session_ctx_t *session, const char *path, bool abort)
 			continue;
 		}
 
-                index_instance = sr_xpath_key_value(value->xpath, "instance", "instance-index",
-                              	             &xp_ctx);
-                if (!index_instance) {
-                        sr_free_val(old_value);
-                        sr_free_val(new_value);
-                        continue;
-                }
-                instance_index = strtoul(index_instance, NULL, 0);
+		index_instance = sr_xpath_key_value(value->xpath, "instance", "instance-index", &xp_ctx);
+		if (!index_instance) {
+			sr_free_val(old_value);
+			sr_free_val(new_value);
+			continue;
+		}
+		instance_index = strtoul(index_instance, NULL, 0);
 
 		sr_xpath_recover(&xp_ctx);
-                index = sr_xpath_key_value(value->xpath, "port", "port-index",
-                                           &xp_ctx);
+		index = sr_xpath_key_value(value->xpath, "port", "port-index", &xp_ctx);
 
-                if (!index) {
-                        sr_free_val(old_value);
-                        sr_free_val(new_value);
-                        continue;
-                }
-                port_id = strtoul(index, NULL, 0);
+		if (!index) {
+			sr_free_val(old_value);
+			sr_free_val(new_value);
+			continue;
+		}
+		port_id = strtoul(index, NULL, 0);
 
 		sr_xpath_recover(&xp_ctx);
 		nodename = sr_xpath_node_name(value->xpath);
@@ -817,14 +813,14 @@ int gptp_parse(sr_session_ctx_t *session, const char *path, bool abort)
 			continue;
 		}
 
-                index = sr_xpath_key_value(value->xpath, "instance", "instance-index",&xp_ctx);
-                if (!index) {
-                        sr_free_val(old_value);
-                        sr_free_val(new_value);
-                        continue;
-                }
+		index = sr_xpath_key_value(value->xpath, "instance", "instance-index", &xp_ctx);
+		if (!index) {
+			sr_free_val(old_value);
+			sr_free_val(new_value);
+			continue;
+		}
 
-                instance_id = strtoul(index, NULL, 0);
+		instance_id = strtoul(index, NULL, 0);
 
 		sr_xpath_recover(&xp_ctx);
 		nodename = sr_xpath_node_name(value->xpath);
@@ -933,7 +929,7 @@ int get_data_type_and_size(const struct lysc_node *snode,uint8_t *data_type, uin
 		const struct lysc_type_str *str = (const struct lysc_type_str *)type;
 
 		if (str->length) {
-			LOG_DBG(" String min %u, max %u",str->length->parts->min_64, str->length->parts->max_64);
+			LOG_DBG(" String min %u, max %u", str->length->parts->min_64, str->length->parts->max_64);
 		}
 		//*data_size = 
 	}
@@ -952,61 +948,61 @@ int prepare_output_string_from_data(char *str, uint8_t size, uint8_t *data,
 
 	switch (data_type) {
 		case LY_TYPE_UINT8:
-			LOG_DBG(" node: %s, type: LY_TYPE_UINT8, value %d ",snode->name,((uint8_t *)data)[0]);
-			snprintf(str, size - 1, "%d",((uint8_t *)data)[0]);
+			LOG_DBG(" node: %s, type: LY_TYPE_UINT8, value %d ", snode->name, ((uint8_t *)data)[0]);
+			snprintf(str, size - 1, "%d", ((uint8_t *)data)[0]);
 			break;
 		case LY_TYPE_INT8:
-			LOG_DBG(" node: %s, type: LY_TYPE_INT8, value %d ",snode->name,((int8_t *)data)[0]);
-			snprintf(str, size - 1, "%d",((int8_t *)data)[0]);
+			LOG_DBG(" node: %s, type: LY_TYPE_INT8, value %d ", snode->name, ((int8_t *)data)[0]);
+			snprintf(str, size - 1, "%d", ((int8_t *)data)[0]);
 			break;
 		case LY_TYPE_UINT16:
-			LOG_DBG(" node: %s, type: LY_TYPE_UINT16, value %d ",snode->name,((uint16_t *)data)[0]);
-			snprintf(str, size - 1, "%d",((uint16_t *)data)[0]);
+			LOG_DBG(" node: %s, type: LY_TYPE_UINT16, value %d ", snode->name, ((uint16_t *)data)[0]);
+			snprintf(str, size - 1, "%d", ((uint16_t *)data)[0]);
 			break;
 		case LY_TYPE_INT16:
-			LOG_DBG(" node: %s, type: LY_TYPE_INT16, value %d ",snode->name,((int16_t *)data)[0]);
-			snprintf(str, size - 1, "%d",((int16_t *)data)[0]);
+			LOG_DBG(" node: %s, type: LY_TYPE_INT16, value %d ", snode->name, ((int16_t *)data)[0]);
+			snprintf(str, size - 1, "%d", ((int16_t *)data)[0]);
 			break;
 		case LY_TYPE_UINT32:
 #ifdef __linux__
-			LOG_DBG(" node: %s, type: LY_TYPE_UINT32, value %d ",snode->name,((uint32_t *)data)[0]);
-			snprintf(str, size - 1, "%d",((uint32_t *)data)[0]);
+			LOG_DBG(" node: %s, type: LY_TYPE_UINT32, value %d ", snode->name, ((uint32_t *)data)[0]);
+			snprintf(str, size - 1, "%d", ((uint32_t *)data)[0]);
 #else
-			LOG_DBG(" node: %s, type: LY_TYPE_UINT32, value %ld ",snode->name,((uint32_t *)data)[0]);
-			snprintf(str, size - 1, "%ld",((uint32_t *)data)[0]);
+			LOG_DBG(" node: %s, type: LY_TYPE_UINT32, value %ld ", snode->name, ((uint32_t *)data)[0]);
+			snprintf(str, size - 1, "%ld", ((uint32_t *)data)[0]);
 #endif
 			break;
 		case LY_TYPE_INT32:
 #ifdef __linux__
-			LOG_DBG(" node: %s, type: LY_TYPE_INT32, value %d ",snode->name,((int32_t *)data)[0]);
-			snprintf(str, size - 1, "%d",((int32_t *)data)[0]);
+			LOG_DBG(" node: %s, type: LY_TYPE_INT32, value %d ", snode->name, ((int32_t *)data)[0]);
+			snprintf(str, size - 1, "%d", ((int32_t *)data)[0]);
 #else
-			LOG_DBG(" node: %s, type: LY_TYPE_INT32, value %ld ",snode->name,((int32_t *)data)[0]);
-			snprintf(str, size - 1, "%ld",((int32_t *)data)[0]);
+			LOG_DBG(" node: %s, type: LY_TYPE_INT32, value %ld ", snode->name, ((int32_t *)data)[0]);
+			snprintf(str, size - 1, "%ld", ((int32_t *)data)[0]);
 #endif
 			break;
 		case LY_TYPE_UINT64:
 			memcpy(&uint64_value,data,sizeof(uint64_value));
 #ifdef __linux__
-			LOG_DBG(" node: %s, type: LY_TYPE_UINT64, value %lu ",snode->name,uint64_value);
-			snprintf(str, size - 1, "%lu",uint64_value);
+			LOG_DBG(" node: %s, type: LY_TYPE_UINT64, value %lu ", snode->name, uint64_value);
+			snprintf(str, size - 1, "%lu", uint64_value);
 #else
-			LOG_DBG(" node: %s, type: LY_TYPE_UINT64, value %llu ",snode->name,uint64_value);
-			snprintf(str, size - 1, "%llu",uint64_value);
+			LOG_DBG(" node: %s, type: LY_TYPE_UINT64, value %llu ", snode->name, uint64_value);
+			snprintf(str, size - 1, "%llu", uint64_value);
 #endif
 			break;
 		case LY_TYPE_INT64:
-			memcpy(&int64_value,data,sizeof(int64_value));
+			memcpy(&int64_value, data, sizeof(int64_value));
 #ifdef __linux__
-			LOG_DBG(" node: %s, type: LY_TYPE_INT64, value %lu ",snode->name,int64_value);
-			snprintf(str, size - 1, "%lu",int64_value);
+			LOG_DBG(" node: %s, type: LY_TYPE_INT64, value %lu ", snode->name, int64_value);
+			snprintf(str, size - 1, "%lu", int64_value);
 #else
-			LOG_DBG(" node: %s, type: LY_TYPE_INT64, value %llu ",snode->name,int64_value);
-			snprintf(str, size - 1, "%llu",int64_value);
+			LOG_DBG(" node: %s, type: LY_TYPE_INT64, value %llu ", snode->name, int64_value);
+			snprintf(str, size - 1, "%llu", int64_value);
 #endif
 			break;
 		case LY_TYPE_BOOL:
-			LOG_DBG(" node: %s, type: LY_TYPE_BOOL, value %d ",snode->name,((uint8_t *)data)[0]);
+			LOG_DBG(" node: %s, type: LY_TYPE_BOOL, value %d ", snode->name, ((uint8_t *)data)[0]);
 			if (((uint8_t *)data)[0] == 0)
 				snprintf(str, size - 1, "%s","false");
 			else if (((uint8_t *)data)[0] == 1)
@@ -1017,22 +1013,22 @@ int prepare_output_string_from_data(char *str, uint8_t size, uint8_t *data,
 
 			break;
 		case LY_TYPE_ENUM:
-			LOG_DBG(" node: %s, type: LY_TYPE_ENUM, value %d ",snode->name,((uint8_t *)data)[0]);
+			LOG_DBG(" node: %s, type: LY_TYPE_ENUM, value %d ", snode->name, ((uint8_t *)data)[0]);
 			j = ((uint8_t *)data)[0];
 			if (!strcmp(snode->name, "port-state") && (j >= 1) && (j <= 9)) {
-				strcpy(str,port_state_string[j]);
+				strcpy(str, port_state_string[j]);
 			}
 			break;
 		case LY_TYPE_IDENT:
-			LOG_DBG(" node: %s, type: LY_TYPE_IDENT, value %d ",snode->name,((uint8_t *)data)[0]);
+			LOG_DBG(" node: %s, type: LY_TYPE_IDENT, value %d ", snode->name, ((uint8_t *)data)[0]);
 			if (!strcmp(snode->name, "time-source")) {
-				if (gptp_time_source_get_identity_ref_from_value(str,((uint8_t *)data)[0]) != 0)
+				if (gptp_time_source_get_identity_ref_from_value(str, ((uint8_t *)data)[0]) != 0)
 					goto err;
 			} else if (!strcmp(snode->name, "clock-class")) {
-				if (gptp_clock_class_get_identity_ref_from_value(str,((uint8_t *)data)[0]) != 0)
+				if (gptp_clock_class_get_identity_ref_from_value(str, ((uint8_t *)data)[0]) != 0)
 					goto err;
 			} else if (!strcmp(snode->name, "clock-accuracy")) {
-				if (gptp_clock_accuracy_get_identity_ref_from_value(str,((uint8_t *)data)[0]) != 0)
+				if (gptp_clock_accuracy_get_identity_ref_from_value(str, ((uint8_t *)data)[0]) != 0)
 					goto err;
 			} else {
 				LOG_ERR(" invalid indentityref type");
@@ -1040,12 +1036,12 @@ int prepare_output_string_from_data(char *str, uint8_t size, uint8_t *data,
 			}
 			break;
 		case LY_TYPE_STRING:
-			LOG_DBG(" node: %s, type: LY_TYPE_STRING ",snode->name);
-			if (!strcmp(snode->name,"clock-identity") || !strcmp(snode->name,"grandmaster-identity") ||
-								!strcmp(snode->name,"last-gm-freq-change")) {
+			LOG_DBG(" node: %s, type: LY_TYPE_STRING ", snode->name);
+			if (!strcmp(snode->name, "clock-identity") || !strcmp(snode->name, "grandmaster-identity") ||
+								!strcmp(snode->name, "last-gm-freq-change")) {
 				string_size = 23;	
-			} else if (!strcmp(snode->name,"last-gm-phase-change") ||
-						!strcmp(snode->name,"sync-receipt-timeout-interval")) {
+			} else if (!strcmp(snode->name, "last-gm-phase-change") ||
+						!strcmp(snode->name, "sync-receipt-timeout-interval")) {
 				string_size = 35;	
 			} else {
 				LOG_ERR(" invalid string type");
@@ -1054,8 +1050,8 @@ int prepare_output_string_from_data(char *str, uint8_t size, uint8_t *data,
 
 			data_size = (string_size+1)/3;
 
-			for (i = 0,j = 0;i < data_size;i++) {
-				sprintf(&str[(i*2) + j], "%02X",((uint8_t *)data)[i]);
+			for (i = 0,j = 0; i < data_size; i++) {
+				sprintf(&str[(i*2) + j], "%02X", ((uint8_t *)data)[i]);
 				if (j < (data_size -1))
 					str[((i+1)*2) + j] = '-';
 				j++;
@@ -1084,7 +1080,7 @@ int gptp_get_node_value(char *str, uint8_t size, const char *ds_name,
 	uint8_t *data;
 	uint8_t data_type = 0, string_size = 0;
 
-	if (get_data_type_and_size(snode,&data_type,&string_size) != 0) {
+	if (get_data_type_and_size(snode,&data_type, &string_size) != 0) {
 		LOG_ERR(" get_data_type_and_size failed");
 		goto err;
 	}
@@ -1142,48 +1138,48 @@ int gptp_get_node_value(char *str, uint8_t size, const char *ds_name,
 
 	if (is_cntr_present) {
 		if (genavb_mobj_cmd_end_node(&cmd) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 	}
 
 	if (genavb_mobj_cmd_end_node(&cmd) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 		goto err;
 	}
 
 	if (is_port) {
 		if (genavb_mobj_cmd_end_node(&cmd) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 
 		if (genavb_mobj_cmd_end_node(&cmd) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 	}
 
 	if (genavb_mobj_cmd_end_node(&cmd) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 		goto err;
 	}
 
-	LOG_INF(" %s: genavb_mobj_cmd_len %u",__FUNCTION__, genavb_mobj_cmd_len(&cmd));
+	LOG_INF(" %s: genavb_mobj_cmd_len %u", __FUNCTION__, genavb_mobj_cmd_len(&cmd));
 	uint16_t *tmpU16 = (uint16_t *)genavb_mobj_cmd_buf(&cmd);
 	for (int i = 0; i < genavb_mobj_cmd_len(&cmd) / 2; i++)
-		LOG_INF("%s: cmd[%u] = %u",__FUNCTION__, i, tmpU16[i]);
+		LOG_INF("%s: cmd[%u] = %u", __FUNCTION__, i, tmpU16[i]);
 
-	LOG_INF(" %s: name %s snode->name %s",__FUNCTION__, name, snode->name);
+	LOG_INF(" %s: name %s snode->name %s", __FUNCTION__, name, snode->name);
 
 	int rc = managed_get(gptp_get_genavb_ctrl(), genavb_mobj_cmd_buf(&cmd), genavb_mobj_cmd_len(&cmd), &get_response, sizeof(get_response));
 	if (rc < 0) {
-		LOG_ERR(" %s: failed at line %d - rc %d",__FUNCTION__, __LINE__, rc);
+		LOG_ERR(" %s: failed at line %d - rc %d", __FUNCTION__, __LINE__, rc);
 		goto err;
 	}
 
 	if (genavb_mobj_rsp_check((u_int8_t *)&get_response) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 		goto err;
 	}
 
@@ -1227,13 +1223,13 @@ int gptp_get_node_value(char *str, uint8_t size, const char *ds_name,
 	if (!status) {
 		for (int i = 0; i < length - 2; i++)
 			LOG_INF(" data[%u] %u ", i, data[i]);
-		if (prepare_output_string_from_data(str, size, data, snode,data_type,string_size) != 0) {
+		if (prepare_output_string_from_data(str, size, data, snode, data_type,string_size) != 0) {
 			LOG_ERR(" prepare_output_string_from_data failed");
 			goto err;
 		}
 		return 0;
 	} else {
-		LOG_ERR(" get_node_header, status is non-zero for node %s, ds %s",snode->name,ds_name);
+		LOG_ERR(" get_node_header, status is non-zero for node %s, ds %s", snode->name, ds_name);
 	}
 
 err:
@@ -1244,27 +1240,27 @@ err:
 void get_node_name_from_lysc_path(const struct lysc_node *snode, const char *match_name, char *name)
 {
 	char *s_path = NULL;
-        char *pch;
-        int stop = 0;
+	char *pch;
+	int stop = 0;
 
-	s_path = lysc_path(snode,LYSC_PATH_DATA,NULL,0);
+	s_path = lysc_path(snode, LYSC_PATH_DATA,NULL,0);
 	if (s_path == NULL) {
 		LOG_ERR(" lysc_path failed");
 		return;
 	}
 
-	//LOG_DBG(" s_path %s",s_path);
-        pch = strtok (s_path,"/");
-        while (pch != NULL)
-        {
-                pch = strtok (NULL, "/");
-                if (stop == 1) {
+	//LOG_DBG(" s_path %s", s_path);
+	pch = strtok (s_path,"/");
+	while (pch != NULL)
+	{
+		pch = strtok (NULL, "/");
+		if (stop == 1) {
 			strcpy(name,pch);
-                        break;
+			break;
 		}
-                if (!strcmp(pch,match_name))
-                        stop = 1;
-        }
+		if (!strcmp(pch,match_name))
+			stop = 1;
+	}
 
 	free(s_path);
 	return;
@@ -1297,8 +1293,8 @@ int gptp_write_port_nodes(struct lyd_node **root, const struct ly_ctx *ctx,
 	}
 
 	if (gptp_get_node_value(str, MAX_SIZE,ds->name, snode, instance_id,
-				true, port_id,is_cntr_present,cntr_name) == 0) {
-		LOG_DBG(" writing %s with value %s",xpath,str);
+				true, port_id, is_cntr_present, cntr_name) == 0) {
+		LOG_DBG(" writing %s with value %s", xpath,str);
 		LY_NEW_PATH(*root, ctx, xpath, str, 0, NULL);
 	}
 
@@ -1318,16 +1314,16 @@ int gptp_write_instance_nodes(struct lyd_node **root, const struct ly_ctx *ctx,
 	char str[MAX_SIZE];
 
 	if (is_cntr_present) {
-		get_node_name_from_lysc_path(snode,cntr_name, name);
-		PREPARE_XPATH_WITH_CNTR(PTP_INSTANCE_XPATH, instance_id,ds->name,cntr_name,name)
+		get_node_name_from_lysc_path(snode, cntr_name, name);
+		PREPARE_XPATH_WITH_CNTR(PTP_INSTANCE_XPATH, instance_id, ds->name, cntr_name,name)
 	} else {
-		get_node_name_from_lysc_path(snode,ds->name, name);
-		PREPARE_XPATH(PTP_INSTANCE_XPATH, instance_id,ds->name,name);
+		get_node_name_from_lysc_path(snode, ds->name, name);
+		PREPARE_XPATH(PTP_INSTANCE_XPATH, instance_id, ds->name,name);
 	}
 
-	if (gptp_get_node_value(str, MAX_SIZE,ds->name, snode, instance_id,
-				false, 0,is_cntr_present,cntr_name) == 0) {
-		LOG_DBG(" writing %s with value %s",xpath,str);
+	if (gptp_get_node_value(str, MAX_SIZE, ds->name, snode, instance_id,
+				false, 0, is_cntr_present, cntr_name) == 0) {
+		LOG_DBG(" writing %s with value %s", xpath,str);
 		LY_NEW_PATH(*root, ctx, xpath, str, 0, NULL);
 	}
 
@@ -1345,7 +1341,7 @@ int traverse_instance_schema_nodes_and_write_data(const struct ly_ctx *ctx,struc
 	const struct lysc_node *ds = NULL; 
 	bool is_cntr_present;
 
-	LOG_INF(" LEAF snode %s, nodetype %d parent %s",snode->name, snode->nodetype, snode->parent->name);
+	LOG_INF(" LEAF snode %s, nodetype %d parent %s", snode->name, snode->nodetype, snode->parent->name);
 
 	if ((snode->flags & LYS_CONFIG_R) && (snode->nodetype & LYS_LEAF)) {
 		parent = snode->parent; 
@@ -1355,10 +1351,10 @@ int traverse_instance_schema_nodes_and_write_data(const struct ly_ctx *ctx,struc
 
 		LOG_INF(" parent %s", parent->name);
 
-		if (!strcmp(parent->name,"parent-port-identity") ||
-			!strcmp(parent->name,"grandmaster-clock-quality") ||
-			!strcmp(parent->name,"current-time") ||
-			!strcmp(parent->name,"clock-quality")) {
+		if (!strcmp(parent->name, "parent-port-identity") ||
+			!strcmp(parent->name, "grandmaster-clock-quality") ||
+			!strcmp(parent->name, "current-time") ||
+			!strcmp(parent->name, "clock-quality")) {
 			ds = parent->parent;
 			is_cntr_present = 1;
 		} else {
@@ -1366,18 +1362,18 @@ int traverse_instance_schema_nodes_and_write_data(const struct ly_ctx *ctx,struc
 			is_cntr_present = 0;
 		}
 
-		if (!strcmp(ds->name,"default-ds") || !strcmp(ds->name,"current-ds") ||
-					!strcmp(ds->name,"parent-ds")) {
-			if (gptp_write_instance_nodes(root,ctx,ds,snode,instance_id,
-							is_cntr_present,parent->name) != SR_ERR_OK) {
-				LOG_ERR(" gptp_write_instance_nodes failed for node %s",snode->name);
+		if (!strcmp(ds->name, "default-ds") || !strcmp(ds->name, "current-ds") ||
+					!strcmp(ds->name, "parent-ds")) {
+			if (gptp_write_instance_nodes(root, ctx, ds, snode, instance_id,
+							is_cntr_present, parent->name) != SR_ERR_OK) {
+				LOG_ERR(" gptp_write_instance_nodes failed for node %s", snode->name);
 				return SR_ERR_INTERNAL;
 			}
 		}
 	}
 
 	for (child = lysc_node_child(snode);child;child = child->next) {
-		if (traverse_instance_schema_nodes_and_write_data(ctx,root,child,instance_id,port_id) != SR_ERR_OK) {
+		if (traverse_instance_schema_nodes_and_write_data(ctx, root, child, instance_id, port_id) != SR_ERR_OK) {
 			return SR_ERR_INTERNAL;
 		}
 	}
@@ -1401,7 +1397,7 @@ int traverse_port_schema_nodes_and_write_data(const struct ly_ctx *ctx,struct ly
 			parent = parent->parent;
 		}
 
-		if (!strcmp(parent->name,"port-identity")) {
+		if (!strcmp(parent->name, "port-identity")) {
 			ds = parent->parent;
 			is_cntr_present = 1;
 		} else {
@@ -1409,17 +1405,17 @@ int traverse_port_schema_nodes_and_write_data(const struct ly_ctx *ctx,struct ly
 			is_cntr_present = 0;
 		}
 
-		if (!strcmp(ds->name,"port-ds") || !strcmp(ds->name,"port-statistics-ds")) {
-			if (gptp_write_port_nodes(root,ctx,ds,snode,instance_id,port_id,
-						is_cntr_present,parent->name) != SR_ERR_OK) {
-				LOG_ERR(" gptp_write_port_nodes failed for node %s",snode->name);
+		if (!strcmp(ds->name, "port-ds") || !strcmp(ds->name, "port-statistics-ds")) {
+			if (gptp_write_port_nodes(root, ctx, ds, snode, instance_id, port_id,
+						is_cntr_present, parent->name) != SR_ERR_OK) {
+				LOG_ERR(" gptp_write_port_nodes failed for node %s", snode->name);
 				return SR_ERR_INTERNAL;
 			}
 		}
 	}
 
-	for (child = lysc_node_child(snode);child;child = child->next) {
-		if (traverse_port_schema_nodes_and_write_data(ctx,root,child,instance_id,port_id) != SR_ERR_OK) {
+	for (child = lysc_node_child(snode); child; child = child->next) {
+		if (traverse_port_schema_nodes_and_write_data(ctx, root, child, instance_id, port_id) != SR_ERR_OK) {
 			return SR_ERR_INTERNAL;
 		}
 	}
@@ -1427,18 +1423,18 @@ int traverse_port_schema_nodes_and_write_data(const struct ly_ctx *ctx,struct ly
 	return SR_ERR_OK;
 }
 
-int verify_received_instance_id(sr_session_ctx_t *session,uint32_t instance_id)
+int verify_received_instance_id(sr_session_ctx_t *session, uint32_t instance_id)
 {
 	sr_val_t *vals = NULL;
 	size_t count = 0;
 	int rc, i, ret = -1;
 	sr_session_ctx_t *new_sess = NULL;
 	
-	GET_RUNNING_DS_SESS_ANG_GET_ITEMS(session,new_sess,PTP_INSTANCE_INDEX_XPATH,vals,count);
+	GET_RUNNING_DS_SESS_ANG_GET_ITEMS(session, new_sess, PTP_INSTANCE_INDEX_XPATH, vals,count);
 
-	for (i = 0;i < count;i++) {
+	for (i = 0; i < count; i++) {
 		if (instance_id == vals[i].data.uint32_val) {
-			LOG_DBG(" instance_id %d matched with running DS",instance_id);
+			LOG_DBG(" instance_id %d matched with running DS", instance_id);
 			ret = 0;
 			break;
 		}
@@ -1450,7 +1446,7 @@ int verify_received_instance_id(sr_session_ctx_t *session,uint32_t instance_id)
 
 }
 
-int verify_received_port_id(sr_session_ctx_t *session,uint32_t instance_id, uint16_t port_id)
+int verify_received_port_id(sr_session_ctx_t *session, uint32_t instance_id, uint16_t port_id)
 {
 	sr_val_t *port_vals = NULL;
 	size_t port_count = 0;
@@ -1458,12 +1454,12 @@ int verify_received_port_id(sr_session_ctx_t *session,uint32_t instance_id, uint
 	sr_session_ctx_t *new_sess = NULL;
 	char xpath[XPATH_MAX_LEN] = {0,};
 	
-	snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/ports/port/port-index",PTP_INSTANCE_XPATH,instance_id);
-	GET_RUNNING_DS_SESS_ANG_GET_ITEMS(session,new_sess,xpath,port_vals,port_count);
+	snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/ports/port/port-index", PTP_INSTANCE_XPATH, instance_id);
+	GET_RUNNING_DS_SESS_ANG_GET_ITEMS(session, new_sess, xpath, port_vals, port_count);
 
-	for (j = 0;j < port_count;j++) {
+	for (j = 0; j < port_count; j++) {
 		if (port_id == port_vals[j].data.uint16_val) {
-			LOG_DBG(" port_id %d matched with running DS",port_id);
+			LOG_DBG(" port_id %d matched with running DS", port_id);
 			ret = 0;
 			break;
 		}
@@ -1479,16 +1475,16 @@ int get_port_ids_from_running_ds(sr_session_ctx_t *session, uint32_t instance_id
 {
 	sr_val_t *port_vals = NULL;
 	size_t port_count = 0;
-	int rc,j;
+	int rc, j;
 	sr_session_ctx_t *new_sess = NULL;
 	char xpath[XPATH_MAX_LEN] = {0,};
 	
-	snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/ports/port/port-index",PTP_INSTANCE_XPATH,instance_id);
-	GET_RUNNING_DS_SESS_ANG_GET_ITEMS(session,new_sess,xpath,port_vals,port_count);
+	snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/ports/port/port-index", PTP_INSTANCE_XPATH, instance_id);
+	GET_RUNNING_DS_SESS_ANG_GET_ITEMS(session, new_sess, xpath, port_vals, port_count);
 
-	for (j = 0;j < port_count;j++) {
-		SET_PORT_ID_INFO(instance_id,instance_id_g[instance_id],port_vals[j].data.uint16_val,j,port_info_g[instance_id].max_ports +1);
-		LOG_DBG(" From running DS: port_id %d",port_info_g[instance_id].port_id[j]);
+	for (j = 0; j < port_count; j++) {
+		SET_PORT_ID_INFO(instance_id, instance_id_g[instance_id], port_vals[j].data.uint16_val, j, port_info_g[instance_id].max_ports +1);
+		LOG_DBG(" From running DS: port_id %d", port_info_g[instance_id].port_id[j]);
 	}
 
 	sr_free_values(port_vals, port_count);
@@ -1506,18 +1502,18 @@ int get_instance_and_port_ids_from_running_ds(sr_session_ctx_t *session)
 	sr_session_ctx_t *new_sess = NULL;
 	char xpath[XPATH_MAX_LEN] = {0,};
 	
-	GET_RUNNING_DS_SESS_ANG_GET_ITEMS(session,new_sess,PTP_INSTANCE_INDEX_XPATH,vals,count);
+	GET_RUNNING_DS_SESS_ANG_GET_ITEMS(session, new_sess, PTP_INSTANCE_INDEX_XPATH, vals,count);
 
-	for (i = 0;i < count;i++) {
-		SET_INSTANCE_INFO(i,vals[i].data.uint32_val,(num_instances_g + 1));
-		LOG_DBG(" From running DS: instance_id %d",instance_id_g[i]);
+	for (i = 0; i < count; i++) {
+		SET_INSTANCE_INFO(i, vals[i].data.uint32_val, (num_instances_g + 1));
+		LOG_DBG(" From running DS: instance_id %d", instance_id_g[i]);
 
-		snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/ports/port/port-index",PTP_INSTANCE_XPATH,instance_id_g[i]);
-		rc = sr_get_items(new_sess,xpath,0,0,&port_vals,&port_count);
+		snprintf(xpath, XPATH_MAX_LEN, "%s[instance-index='%d']/ports/port/port-index", PTP_INSTANCE_XPATH, instance_id_g[i]);
+		rc = sr_get_items(new_sess, xpath,0,0, &port_vals, &port_count);
 		if (rc == SR_ERR_OK) {
-			for (j = 0;j < port_count;j++) {
-				SET_PORT_ID_INFO(i,instance_id_g[i],port_vals[j].data.uint16_val,j,port_info_g[i].max_ports +1);
-				LOG_DBG(" From running DS: port_id %d",port_info_g[i].port_id[j]);
+			for (j = 0; j < port_count; j++) {
+				SET_PORT_ID_INFO(i, instance_id_g[i], port_vals[j].data.uint16_val, j, port_info_g[i].max_ports +1);
+				LOG_DBG(" From running DS: port_id %d", port_info_g[i].port_id[j]);
 			}
 			sr_free_values(port_vals, port_count);
 		}
@@ -1533,35 +1529,35 @@ int get_instance_and_port_ids(sr_session_ctx_t *session,const char *request_xpat
 	sr_xpath_ctx_t xp_ctx = {0};
 	char *index = NULL;
 
-	memset(&instance_id_g,0,(sizeof(uint32_t)*MAX_INDICES));
+	memset(&instance_id_g, 0, (sizeof(uint32_t)*MAX_INDICES));
 	num_instances_g = 0;
-	memset(&port_info_g,0,(sizeof(struct gptp_port_instance)*MAX_INDICES));
+	memset(&port_info_g, 0, (sizeof(struct gptp_port_instance)*MAX_INDICES));
 
 	/* Get instance-index and port-index from the provided request_xpath. */
-	index = sr_xpath_key_value((char *)request_xpath, "instance", "instance-index",&xp_ctx);
+	index = sr_xpath_key_value((char *)request_xpath, "instance", "instance-index", &xp_ctx);
 	if (index) {
-		SET_INSTANCE_INFO(0,strtoul(index, NULL, 0),1);
+		SET_INSTANCE_INFO(0, strtoul(index, NULL, 0), 1);
 
-		if (verify_received_instance_id(session,instance_id_g[0]) != 0) {
-			LOG_ERR(" Requested instance_id %d is not valid",instance_id_g[0]);
+		if (verify_received_instance_id(session, instance_id_g[0]) != 0) {
+			LOG_ERR(" Requested instance_id %d is not valid", instance_id_g[0]);
 			return -1;
 		}
-		LOG_DBG(" Requested instance_id is %d ",instance_id_g[0]);
+		LOG_DBG(" Requested instance_id is %d ", instance_id_g[0]);
 
 		sr_xpath_recover(&xp_ctx);
-		index = sr_xpath_key_value((char *)request_xpath, "port", "port-index",&xp_ctx);
+		index = sr_xpath_key_value((char *)request_xpath, "port", "port-index", &xp_ctx);
 		if (index) {
-			SET_PORT_ID_INFO(0,(instance_id_g[0]),strtoul(index, NULL, 0),0,1);
+			SET_PORT_ID_INFO(0, (instance_id_g[0]), strtoul(index, NULL, 0), 0, 1);
 
-			if (verify_received_port_id(session,instance_id_g[0], port_info_g[0].port_id[0]) != 0) {
+			if (verify_received_port_id(session, instance_id_g[0], port_info_g[0].port_id[0]) != 0) {
 				LOG_ERR(" Requested port id is %d is not valid",port_info_g[0].port_id[0]);
 				return -1;
 			}
-			LOG_DBG(" Requested port id is %d",port_info_g[0].port_id[0]);
+			LOG_DBG(" Requested port id is %d", port_info_g[0].port_id[0]);
 
 		} else {
 			LOG_DBG(" Getting port_indices from the running data store");
-			if (get_port_ids_from_running_ds(session,instance_id_g[0]) != 0) {
+			if (get_port_ids_from_running_ds(session, instance_id_g[0]) != 0) {
 				LOG_ERR(" get_port_ids_from_running_ds failed");
 			}
 		}
@@ -1604,7 +1600,7 @@ static int gptp_subtree_get_cb(sr_session_ctx_t *session, uint32_t sub_id,
 		goto cleanup;
 	}
 
-	if (lys_find_xpath(ctx,NULL,request_xpath,0,&set) != LY_SUCCESS) {
+	if (lys_find_xpath(ctx, NULL, request_xpath, 0, &set) != LY_SUCCESS) {
 		LOG_ERR(" lys_find_xpath failed");
 		goto cleanup;
 	}
@@ -1614,44 +1610,44 @@ static int gptp_subtree_get_cb(sr_session_ctx_t *session, uint32_t sub_id,
 		goto cleanup;
 	}
 
-	if (get_instance_and_port_ids(session,request_xpath) != 0) {
+	if (get_instance_and_port_ids(session, request_xpath) != 0) {
 		LOG_DBG(" get_instance_and_port_ids failed");
 		rc = SR_ERR_OK;
 		goto cleanup;
 	}
 
-	for (j = 0;j < num_instances_g;j++) {
-		LOG_DBG(" j %d, instance_id %d, num_instances_g %d",j,instance_id_g[j],num_instances_g);
+	for (j = 0; j < num_instances_g; j++) {
+		LOG_DBG(" j %d, instance_id %d, num_instances_g %d", j, instance_id_g[j], num_instances_g);
 		instance_id = instance_id_g[j];
 		for (i = 0; i < set->count; i++) {
-			GET_SCHEMA_NODE(snode,set,i);
-			if (traverse_instance_schema_nodes_and_write_data(ctx,parent,
-					snode,instance_id,port_id) != SR_ERR_OK) {
+			GET_SCHEMA_NODE(snode, set, i);
+			if (traverse_instance_schema_nodes_and_write_data(ctx, parent,
+					snode, instance_id, port_id) != SR_ERR_OK) {
 				goto cleanup;
 			}
 		}
 
-		for (k = 0;k < port_info_g[j].max_ports;k++) {
-			LOG_DBG(" k %d, instance_id %d, port_id %d, max_ports %d",k,instance_id_g[j],port_info_g[j].port_id[k],port_info_g[j].max_ports);
+		for (k = 0; k < port_info_g[j].max_ports; k++) {
+			LOG_DBG(" k %d, instance_id %d, port_id %d, max_ports %d", k, instance_id_g[j], port_info_g[j].port_id[k], port_info_g[j].max_ports);
 			port_id = port_info_g[j].port_id[k];
 			for (i = 0; i < set->count; i++) {
-				GET_SCHEMA_NODE(snode,set,i);
-				if (traverse_port_schema_nodes_and_write_data(ctx,parent,snode,
-					instance_id,port_id)!= SR_ERR_OK) {
+				GET_SCHEMA_NODE(snode, set, i);
+				if (traverse_port_schema_nodes_and_write_data(ctx, parent, snode,
+					instance_id, port_id)!= SR_ERR_OK) {
 					goto cleanup;
 				}
 			}
 		}
 	}
 
-        rc = SR_ERR_OK;
+	rc = SR_ERR_OK;
 
 cleanup:
 	if (set)
-		ly_set_free(set,NULL);
+		ly_set_free(set, NULL);
 
-        if (ctx)
-                sr_session_release_context(session);
+	if (ctx)
+		sr_session_release_context(session);
 
 	return rc;
 }
