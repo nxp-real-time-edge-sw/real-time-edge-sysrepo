@@ -19,16 +19,30 @@
 #include <sysrepo.h>
 
 #include "common.h"
+#include <stdbool.h>
 
 #define MODULE_NAME_PTP     "ieee1588-ptp-tt"
 #define PTP_ROOT_PATH       "/ieee1588-ptp-tt:ptp"
 #define PTP_INSTANCES_PATH  "/ieee1588-ptp-tt:ptp/instances"
+#define PTP_CURRENT_DS_PATH "/ieee1588-ptp-tt:ptp/instances/instance[instance-index='%d']/current-ds/%s"
 
 #define PTP_CONFIG_FILE     "/etc/ptp4l_cfg/instance%d.cfg"
+#define PMC_CONFIG_FILE     "/etc/ptp4l_cfg/gPTP.cfg"
 
 #define PTP_BUFFER_SIZE     (16 * 1024U)
+#define CURRENT_DS_SIZE     (100U)
 
 static sr_subscription_ctx_t *subscription = NULL;
+static const char *keyRegExp[3] = {
+    " stepsRemoved %s",
+    " offsetFromMaster %s",
+    " meanPathDelay %s"
+};
+static const char *leaf[3] = {
+    "steps-removed",
+    "offset-from-time-transmitter",
+    "mean-path-delay"
+};
 
 /* Add extra parameters undefined in YANG model */
 static void ptp_add_extra_config(FILE *fptr)
@@ -169,6 +183,109 @@ error:
     return rc;
 }
 
+static void ptp_get_current_ds_data(struct lyd_node *parent, const struct ly_ctx *ly_ctx,
+        char *line, int instIndex, int keyId)
+{
+    int rc;
+    char *xpath;
+    char *dot;
+    char value[CURRENT_DS_SIZE] = {0};
+
+    if ((line == NULL) || (instIndex < 0) || (keyId < 0) || (keyId > 2))
+        return;
+
+    if (sscanf(line, keyRegExp[keyId], value) == 1) {
+        if (asprintf(&xpath, PTP_CURRENT_DS_PATH, instIndex, leaf[keyId]) < 0)
+            return;
+
+        dot = strchr(value, '.');
+        if (dot != NULL)
+            *dot = '\0';
+
+        lyd_new_path(parent, ly_ctx, xpath, value, 0, NULL);
+        free(xpath);
+    }
+}
+
+static void ptp_get_current_ds(struct lyd_node *parent, const struct ly_ctx *ly_ctx, int index)
+{
+    FILE *fp;
+    char *line = NULL;
+    size_t len = 0;
+    int lineNum = 0;
+    int instanceNum = -1;
+    bool ouput = false;
+    int keyId = 0;
+    const char *cmd = "pmc -u -f " PMC_CONFIG_FILE " -b 0 'GET CURRENT_DATA_SET' 2>&1";
+
+    fp = popen(cmd, "r");
+    if (fp == NULL) {
+        LOG_ERR("Failed to execute command: %s", cmd);
+        return;
+    }
+
+    if ((getline(&line, &len, fp) > 0) && (strstr(line, "GET CURRENT_DATA_SET") != NULL)) {
+        while (getline(&line, &len, fp) > 0) {
+            keyId = lineNum % 4;
+            switch (keyId) {
+            case 0:
+                instanceNum++;
+                if ((index < 0) || (index == instanceNum))
+                    ouput = true;
+                else
+                    ouput = false;
+                break;
+
+            case 1:
+            case 2:
+            case 3:
+                if (ouput)
+                    ptp_get_current_ds_data(parent, ly_ctx, line, instanceNum, keyId - 1);
+                break;
+
+            default:
+                break;
+            }
+            lineNum++;
+        }
+    }
+    free(line);
+    pclose(fp);
+}
+
+static int ptp_oper_subscribe_cb(sr_session_ctx_t *session, uint32_t sub_id,
+        const char *module_name,const char *path, const char *request_xpath,
+        uint32_t request_id, struct lyd_node **parent, void *private_data)
+{
+    const struct ly_ctx *ly_ctx;
+    struct lyd_node *root;
+    int rc;
+    int index;
+
+    LOG_INF("ptp: start oper callback at %s; request xpath: %s", path, request_xpath);
+
+    ly_ctx = sr_acquire_context(sr_session_get_connection(session));
+    sr_release_context(sr_session_get_connection(session));
+
+    rc = lyd_new_path(NULL, ly_ctx, PTP_ROOT_PATH, NULL, 0, &root);
+    if (rc)
+        goto error;
+
+    if (strstr(request_xpath, "current-ds") != NULL) {
+        rc = sscanf(request_xpath, "%*[^']'%d']/current-ds", &index);
+        if (rc == 1)
+            ptp_get_current_ds(root, ly_ctx, index);
+        else
+            ptp_get_current_ds(root, ly_ctx, -1);
+    }
+
+    *parent = root;
+    return SR_ERR_OK;
+
+error:
+    return rc;
+}
+
 int sr_plugin_init_cb(sr_session_ctx_t *session, void **private_data)
 {
     char *xpath = PTP_ROOT_PATH;
@@ -183,6 +300,19 @@ int sr_plugin_init_cb(sr_session_ctx_t *session, void **private_data)
         goto error;
     }
     LOG_INF("Subscribed changes for %s", xpath);
+
+    sr_session_switch_ds(session, SR_DS_OPERATIONAL);
+
+    rc = sr_oper_get_subscribe(session, MODULE_NAME_PTP, xpath,
+                               ptp_oper_subscribe_cb, NULL, 0, &subscription);
+    if (rc != SR_ERR_OK) {
+        LOG_ERR("Failed to subscribe operational data for \"%s\" (%s).",
+                xpath, sr_strerror(rc));
+        goto error;
+    }
+    LOG_INF("Subscribed operational data for %s", xpath);
+
+    sr_session_switch_ds(session, SR_DS_RUNNING);
 
     return SR_ERR_OK;
 
