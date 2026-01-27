@@ -749,7 +749,7 @@ int gptp_port_parse(sr_session_ctx_t *session, const char *path, bool abort)
 
 		if (!strcmp(parent->name, "default-ds")) {
 			if (config_gptp(value, nodename, parent->name, instance_index, true, port_id, 0, NULL) != 0) {
-				LOG_ERR(" config_gptp failed");
+				LOG_ERR(" config_gptp failed for %s/%s", parent->name, nodename);
 				rc = SR_ERR_INVAL_ARG;
 				sr_free_val(old_value);
 				sr_free_val(new_value);
@@ -1164,12 +1164,10 @@ int gptp_get_node_value(char *str, uint8_t size, const char *ds_name,
 		goto err;
 	}
 
-	LOG_INF(" %s: genavb_mobj_cmd_len %u", __FUNCTION__, genavb_mobj_cmd_len(&cmd));
+	LOG_DBG(" %s: genavb_mobj_cmd_len %u", __FUNCTION__, genavb_mobj_cmd_len(&cmd));
 	uint16_t *tmpU16 = (uint16_t *)genavb_mobj_cmd_buf(&cmd);
 	for (int i = 0; i < genavb_mobj_cmd_len(&cmd) / 2; i++)
-		LOG_INF("%s: cmd[%u] = %u", __FUNCTION__, i, tmpU16[i]);
-
-	LOG_INF(" %s: name %s snode->name %s", __FUNCTION__, name, snode->name);
+		LOG_DBG("%s: cmd[%u] = %u", __FUNCTION__, i, tmpU16[i]);
 
 	int rc = managed_get(gptp_get_genavb_ctrl(), genavb_mobj_cmd_buf(&cmd), genavb_mobj_cmd_len(&cmd), &get_response, sizeof(get_response));
 	if (rc < 0) {
@@ -1184,44 +1182,44 @@ int gptp_get_node_value(char *str, uint8_t size, const char *ds_name,
 
 	/* instance node header */
 	data = get_node_header((uint8_t *)&get_response, &node_id, &total_length, &status);
-	LOG_INF("id %u total_length %u status %u", node_id, total_length, status);
+	LOG_DBG("id %u total_length %u status %u", node_id, total_length, status);
 
 	/* instance entry key header */
 	data = get_node_header(data, &node_id, &length, &status);
-	LOG_INF("id %u length %u status %u", node_id, length, status);
+	LOG_DBG("id %u length %u status %u", node_id, length, status);
 	data = get_node_next(data, length);
 
 	if (is_port) {
 		/* ports node header */
 		data = get_node_header(data, &node_id, &length, &status);
-		LOG_INF("id %u length %u status %u", node_id, length, status);
+		LOG_DBG("id %u length %u status %u", node_id, length, status);
 
 		/* port node header */
 		data = get_node_header(data, &node_id, &length, &status);
-		LOG_INF("id %u length %u status %u", node_id, length, status);
+		LOG_DBG("id %u length %u status %u", node_id, length, status);
 
 		/* port entry key header */
 		data = get_node_header(data, &node_id, &length, &status);
-		LOG_INF("id %u length %u status %u", node_id, length, status);
+		LOG_DBG("id %u length %u status %u", node_id, length, status);
 		data = get_node_next(data, length);
 	}
 
 	/* container ds */
 	data = get_node_header(data, &node_id, &length, &status);
-	LOG_INF("id %u length %u status %u", node_id, length, status);
+	LOG_DBG("id %u length %u status %u", node_id, length, status);
 
 	if (is_cntr_present) {
 		/* optional sub-container header */
 		data = get_node_header(data, &node_id, &length, &status);
-		LOG_INF("id %u length %u status %u", node_id, length, status);
+		LOG_DBG("id %u length %u status %u", node_id, length, status);
 	}
 
 	/* leaf header */
 	data = get_node_header(data, &node_id, &length, &status);
-	LOG_INF("id %u length %u status %u", node_id, length, status);
+	LOG_DBG("id %u length %u status %u", node_id, length, status);
 	if (!status) {
 		for (int i = 0; i < length - 2; i++)
-			LOG_INF(" data[%u] %u ", i, data[i]);
+			LOG_DBG(" data[%u] %u ", i, data[i]);
 		if (prepare_output_string_from_data(str, size, data, snode, data_type,string_size) != 0) {
 			LOG_ERR(" prepare_output_string_from_data failed");
 			goto err;
