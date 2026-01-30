@@ -89,7 +89,8 @@ set(TSN_SRC
 		src/qci_fm.c
 		src/qci.c
 		src/cb.c
-		src/cb_streamid.c)
+		src/cb_streamid.c
+		src/speed.c)
 
 if (CONF_SYSREPO_TSN_TC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSYSREPO_TSN_TC")

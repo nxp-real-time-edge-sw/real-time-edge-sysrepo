@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 NXP
+ * Copyright 2025-2026 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 #include "qci.h"
 #include "cb_streamid.h"
 #include "cb.h"
+#include "speed.h"
 
 static sr_subscription_ctx_t *subscription = NULL;
 
@@ -89,6 +90,13 @@ int sr_plugin_init_cb(sr_session_ctx_t *session, void **private_data)
     /* Subscribe to CB */
     xpath = "/ieee802-dot1cb-frer:frer";
     SR_CONFIG_SUBSCR(mod_name, xpath, cb_subtree_change_cb, 0);
+
+    sr_session_switch_ds(session, SR_DS_OPERATIONAL);
+    /* Subscribe to the speed subtree */
+    mod_name = MODULE_NAME_SPEED;
+    xpath = SPEED_ROOT_PATH;
+    SR_OPER_GET_SUBSCR(mod_name, xpath, speed_oper_subscribe_cb);
+    sr_session_switch_ds(session, SR_DS_RUNNING);
 
     LOG_INF("TSN plugin initialization finished.");
     return SR_ERR_OK;
