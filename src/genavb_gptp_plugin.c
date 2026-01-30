@@ -412,54 +412,54 @@ void gptp_identity_refs_init(void)
 	return;
 }
 
-int gptp_set_leaf_value(char *nodename, const char *ds_name,struct genavb_mobj_cmd *cmd,sr_val_t *value,int id)
+int gptp_set_leaf_value(char *nodename, const char *ds_name, struct genavb_mobj_cmd *cmd, sr_val_t *value)
 {
 	uint8_t val = 0;
 
 	switch (value->type) {
 		case SR_BOOL_T:
-			LOG_DBG(" setting node: %s, ds: %s, SR_BOOL_T, value: %d",nodename,ds_name,value->data.bool_val);
-			if (genavb_mobj_cmd_set_leaf_u8(cmd, id, value->data.bool_val) < 0)
+			LOG_DBG(" setting node: %s, ds: %s, SR_BOOL_T, value: %d", nodename, ds_name, value->data.bool_val);
+			if (genavb_mobj_cmd_set_leaf_u8(cmd, nodename, value->data.bool_val) < 0)
 				goto err;
 			break;
 		case SR_INT8_T:
-			LOG_DBG(" setting node: %s, ds: %s, SR_INT8_T, value: %d",nodename,ds_name,value->data.int8_val);
-			if (genavb_mobj_cmd_set_leaf_s8(cmd, id, value->data.int8_val) < 0)
+			LOG_DBG(" setting node: %s, ds: %s, SR_INT8_T, value: %d", nodename, ds_name, value->data.int8_val);
+			if (genavb_mobj_cmd_set_leaf_s8(cmd, nodename, value->data.int8_val) < 0)
 				goto err;
 			break;
 		case SR_UINT8_T:
-			LOG_DBG(" setting node: %s, ds: %s, SR_UINT8_T, value: %d",nodename,ds_name,value->data.uint8_val);
-			if (genavb_mobj_cmd_set_leaf_u8(cmd, id, value->data.uint8_val) < 0)
+			LOG_DBG(" setting node: %s, ds: %s, SR_UINT8_T, value: %d", nodename, ds_name, value->data.uint8_val);
+			if (genavb_mobj_cmd_set_leaf_u8(cmd, nodename, value->data.uint8_val) < 0)
 				goto err;
 			break;
 		case SR_INT16_T:
-			LOG_DBG(" setting node: %s, ds: %s, SR_INT16_T, value: %d",nodename,ds_name,value->data.int16_val);
-			if (genavb_mobj_cmd_set_leaf_s16(cmd, id, value->data.int16_val) < 0)
+			LOG_DBG(" setting node: %s, ds: %s, SR_INT16_T, value: %d", nodename, ds_name, value->data.int16_val);
+			if (genavb_mobj_cmd_set_leaf_s16(cmd, nodename, value->data.int16_val) < 0)
 				goto err;
 			break;
 		case SR_UINT16_T:
-			LOG_DBG(" setting node: %s, ds: %s, SR_UINT16_T, value: %d",nodename,ds_name,value->data.uint16_val);
-			if (genavb_mobj_cmd_set_leaf_u16(cmd, id, value->data.uint16_val) < 0)
+			LOG_DBG(" setting node: %s, ds: %s, SR_UINT16_T, value: %d", nodename, ds_name, value->data.uint16_val);
+			if (genavb_mobj_cmd_set_leaf_u16(cmd, nodename, value->data.uint16_val) < 0)
 				goto err;
 			break;
 		case SR_INT32_T:
-			LOG_DBG(" setting node: %s, ds: %s, SR_INT32_T, value: %d",nodename,ds_name,value->data.int32_val);
-			if (genavb_mobj_cmd_set_leaf_s32(cmd, id, value->data.int32_val) < 0)
+			LOG_DBG(" setting node: %s, ds: %s, SR_INT32_T, value: %d", nodename, ds_name, value->data.int32_val);
+			if (genavb_mobj_cmd_set_leaf_s32(cmd, nodename, value->data.int32_val) < 0)
 				goto err;
 			break;
 		case SR_UINT32_T:
-			LOG_DBG(" setting node: %s, ds: %s, SR_UINT32_T, value: %d",nodename,ds_name,value->data.uint32_val);
-			if (genavb_mobj_cmd_set_leaf_u32(cmd, id, value->data.uint32_val) < 0)
+			LOG_DBG(" setting node: %s, ds: %s, SR_UINT32_T, value: %d", nodename, ds_name, value->data.uint32_val);
+			if (genavb_mobj_cmd_set_leaf_u32(cmd, nodename, value->data.uint32_val) < 0)
 				goto err;
 			break;
 		case SR_INT64_T:
-			LOG_DBG(" setting node: %s, ds: %s, SR_INT64_T, value: %lu",nodename,ds_name,value->data.int64_val);
-			if (genavb_mobj_cmd_set_leaf_s64(cmd, id, value->data.int64_val) < 0)
+			LOG_DBG(" setting node: %s, ds: %s, SR_INT64_T, value: %lu", nodename, ds_name, value->data.int64_val);
+			if (genavb_mobj_cmd_set_leaf_s64(cmd, nodename, value->data.int64_val) < 0)
 				goto err;
 			break;
 		case SR_UINT64_T:
-			LOG_DBG(" setting node: %s, ds: %s, SR_UINT64_T, value: %lu",nodename,ds_name,value->data.uint64_val);
-			if (genavb_mobj_cmd_set_leaf_u64(cmd, id, value->data.uint64_val) < 0)
+			LOG_DBG(" setting node: %s, ds: %s, SR_UINT64_T, value: %lu", nodename, ds_name,value->data.uint64_val);
+			if (genavb_mobj_cmd_set_leaf_u64(cmd, nodename, value->data.uint64_val) < 0)
 				goto err;
 			break;
 		case SR_STRING_T:
@@ -482,8 +482,8 @@ int gptp_set_leaf_value(char *nodename, const char *ds_name,struct genavb_mobj_c
 			}
 
 			LOG_DBG(" setting node: %s, ds: %s, SR_IDENTITYREF_T, recvd string: %s, int value: %d",
-						nodename,ds_name,value->data.identityref_val,val);
-			if (genavb_mobj_cmd_set_leaf_u8(cmd, id, val) < 0)
+						nodename, ds_name, value->data.identityref_val,val);
+			if (genavb_mobj_cmd_set_leaf_u8(cmd, nodename, val) < 0)
 				goto err;
 			break;
 		default :
@@ -504,105 +504,60 @@ int config_gptp(sr_val_t *value,char *nodename, const char *ds_name,
 	struct genavb_msg_managed_set_response set_response;
 	struct genavb_mobj_cmd cmd;
 	uint16_t buf[BUF_LEN];
-	int id = 0;;
+
 	int ret = -1;
 	const char *name = ds_name;
 
-	genavb_mobj_cmd_init(&cmd, (uint8_t *)buf, BUF_LEN);
+	genavb_mobj_cmd_init(&cmd, "ptp", (uint8_t *)buf, BUF_LEN);
 
-	if ((id = genavb_mobj_gptp_node_id(NULL, "instance")) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+	if (genavb_mobj_cmd_start_node(&cmd, "instance") < 0) {
+		LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 		goto err;
 	}
 
-	if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-		goto err;
-	}
-
-	if ((id = genavb_mobj_gptp_node_id("instance", "instance-index")) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-		goto err;
-	}
-
-	if (genavb_mobj_cmd_set_list_index(&cmd, id, instance_id) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+	if (genavb_mobj_cmd_set_list_index(&cmd, "instance-index", instance_id) < 0) {
+		LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 		goto err;
 	}
 
 	if (!is_port) {
-		if ((id = genavb_mobj_gptp_node_id("instance", ds_name)) < 0) {
-			LOG_ERR(" %s: genavb_mobj_gptp_node_id for failed ds %s",__FUNCTION__,ds_name);
-			goto err;
-		}
-
-		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		if (genavb_mobj_cmd_start_node(&cmd, ds_name) < 0) {
+			LOG_ERR(" %s: failed at line %d for %s", __FUNCTION__, __LINE__, ds_name);
 			goto err;
 		}
 	} else {
-		if ((id = genavb_mobj_gptp_node_id("instance", "ports")) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		if (genavb_mobj_cmd_start_node(&cmd, "ports") < 0) {
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 
-		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		if (genavb_mobj_cmd_start_node(&cmd, "port") < 0) {
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 
-		if ((id = genavb_mobj_gptp_node_id("ports", "port")) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		if (genavb_mobj_cmd_set_list_index(&cmd, "port-index", port_id) < 0) {
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 
-		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-			goto err;
-		}
-
-		if ((id = genavb_mobj_gptp_node_id("port", "port-index")) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-			goto err;
-		}
-
-		if (genavb_mobj_cmd_set_list_index(&cmd, id, port_id) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-			goto err;
-		}
-
-		if ((id = genavb_mobj_gptp_node_id("ports", ds_name)) < 0) {
-			LOG_ERR(" %s: failed at line %d ds_name=%s",__FUNCTION__, __LINE__, ds_name);
-			goto err;
-		}
-
-		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		if (genavb_mobj_cmd_start_node(&cmd, ds_name) < 0) {
+			LOG_ERR(" %s: failed at line %d for %s", __FUNCTION__, __LINE__, ds_name);
 			goto err;
 		}
 	}
 
 	if (is_cntr_present) {
-		if ((id = genavb_mobj_gptp_node_id(ds_name,cntr_name)) < 0) {
-			LOG_ERR(" %s: genavb_mobj_gptp_node_id for container %s, ds %s",__FUNCTION__,cntr_name,ds_name);
-			goto err;
-		}
-
-		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		if (genavb_mobj_cmd_start_node(&cmd, cntr_name) < 0) {
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 
 		name = cntr_name;
 	}
 
-	if ((id = genavb_mobj_gptp_node_id(name, nodename)) < 0) {
-		LOG_ERR(" %s: genavb_mobj_gptp_node_id failed for container %s, node %s",__FUNCTION__,name,nodename);
-		goto err;
-	}
-
-	if (gptp_set_leaf_value(nodename,ds_name,&cmd,value,id) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+	if (gptp_set_leaf_value(nodename, name, &cmd, value) < 0) {
+		LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 		goto err;
 	}
 
@@ -797,7 +752,7 @@ int gptp_port_parse(sr_session_ctx_t *session, const char *path, bool abort)
 			goto err;
 		}
 
-		if (!strcmp(parent->name,GPTP_NAME_PORT_DS)) {
+		if (!strcmp(parent->name, "default-ds")) {
 			if (config_gptp(value, nodename, parent->name, instance_index, true, port_id, 0, NULL) != 0) {
 				LOG_ERR(" config_gptp failed");
 				rc = SR_ERR_INVAL_ARG;
@@ -899,11 +854,11 @@ int gptp_parse(sr_session_ctx_t *session, const char *path, bool abort)
 			is_cntr_present = 0;
 		}
 
-		if (!strcmp(ds->name,GPTP_NAME_DEFAULT_DS) ||
-				!strcmp(ds->name,GPTP_NAME_TIME_PROPERTIES_DS)) {
-			if (config_gptp(value,nodename,ds->name,instance_id,false,0,
-					is_cntr_present,parent->name) != 0) {
-				LOG_ERR(" config_gptp failed");
+		if (!strcmp(ds->name, "default-ds") ||
+				!strcmp(ds->name, "time-properties-ds")) {
+			if (config_gptp(value, nodename, ds->name, instance_id, false,0,
+					is_cntr_present, parent->name) != 0) {
+				LOG_ERR(" config_gptp failed for %s/%s", ds->name, nodename);
 				rc = SR_ERR_INVAL_ARG;
 				sr_free_val(old_value);
 				sr_free_val(new_value);
@@ -1126,111 +1081,62 @@ int gptp_get_node_value(char *str, uint8_t size, const char *ds_name,
 	struct genavb_mobj_cmd cmd;
 	uint8_t buf[BUF_LEN];
 	uint16_t length, status, total_length, node_id;
-	int id;
 	uint8_t *data;
 	uint8_t data_type = 0, string_size = 0;
-	const char *name = ds_name;
 
 	if (get_data_type_and_size(snode,&data_type,&string_size) != 0) {
 		LOG_ERR(" get_data_type_and_size failed");
 		goto err;
 	}
 
-	genavb_mobj_cmd_init(&cmd, (uint8_t *)buf, BUF_LEN);
+	genavb_mobj_cmd_init(&cmd, "ptp", (uint8_t *)buf, BUF_LEN);
 
-	if ((id = genavb_mobj_gptp_node_id(NULL, "instance")) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+	if (genavb_mobj_cmd_start_node(&cmd, "instance") < 0) {
+		LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 		goto err;
 	}
 
-	if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-		goto err;
-	}
-
-	if ((id = genavb_mobj_gptp_node_id("instance", "instance-index")) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-		goto err;
-	}
-
-	if (genavb_mobj_cmd_set_list_index(&cmd, id, instance_id) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+	if (genavb_mobj_cmd_set_list_index(&cmd, "instance-index", instance_id) < 0) {
+		LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 		goto err;
 	}
 
 	if (!is_port) {
-		if ((id = genavb_mobj_gptp_node_id("instance", ds_name)) < 0) {
-			LOG_ERR(" %s: genavb_mobj_gptp_node_id for failed ds %s",__FUNCTION__,ds_name);
-			goto err;
-		}
-
-		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		if (genavb_mobj_cmd_start_node(&cmd, ds_name) < 0) {
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 	} else {
-		if ((id = genavb_mobj_gptp_node_id("instance", "ports")) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		if (genavb_mobj_cmd_start_node(&cmd, "ports") < 0) {
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 
-		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		if (genavb_mobj_cmd_start_node(&cmd, "port") < 0) {
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 
-		if ((id = genavb_mobj_gptp_node_id("ports", "port")) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		if (genavb_mobj_cmd_set_list_index(&cmd, "port-index", port_id) < 0) {
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 
-		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-			goto err;
-		}
-
-		if ((id = genavb_mobj_gptp_node_id("port", "port-index")) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-			goto err;
-		}
-
-		if (genavb_mobj_cmd_set_list_index(&cmd, id, port_id) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-			goto err;
-		}
-
-		if ((id = genavb_mobj_gptp_node_id("ports", ds_name)) < 0) {
-			LOG_ERR(" %s: failed at line %d ds_name=%s",__FUNCTION__, __LINE__, ds_name);
-			goto err;
-		}
-
-		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+		if (genavb_mobj_cmd_start_node(&cmd, ds_name) < 0) {
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
 	}
 
 	if (is_cntr_present) {
-		if ((id = genavb_mobj_gptp_node_id(ds_name,cntr_name)) < 0) {
-			LOG_ERR(" %s: genavb_mobj_gptp_node_id failed for container %s in ds %s",__FUNCTION__,cntr_name,ds_name);
+		if (genavb_mobj_cmd_start_node(&cmd, cntr_name) < 0) {
+			LOG_ERR(" %s: failed at line %d", __FUNCTION__, __LINE__);
 			goto err;
 		}
-
-		if (genavb_mobj_cmd_start_node(&cmd, id) < 0) {
-			LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
-			goto err;
-		}
-
-		name = cntr_name;
 	}
 
-	if ((id = genavb_mobj_gptp_node_id(name, snode->name)) < 0) {
-		LOG_ERR(" %s: genavb_mobj_gptp_node_id failed for container %s, node %s",__FUNCTION__,name,snode->name);
-		goto err;
-	}
-
-	if (genavb_mobj_cmd_get_leaf(&cmd, id) < 0) {
-		LOG_ERR(" %s: failed at line %d",__FUNCTION__, __LINE__);
+	if (genavb_mobj_cmd_get_leaf(&cmd, snode->name) < 0) {
+		LOG_ERR(" %s: failed at line %d for %s", __FUNCTION__, __LINE__, snode->name);
 		goto err;
 	}
 
