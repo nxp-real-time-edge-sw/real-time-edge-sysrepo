@@ -92,6 +92,11 @@ set(TSN_SRC
 		src/cb_streamid.c
 		src/speed.c)
 
+set(HW_PLUGIN_NAME "hardware-plugin")
+set(HW_SRC
+		src/common.c
+		src/hardware-plugin.c)
+
 if (CONF_SYSREPO_TSN_TC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSYSREPO_TSN_TC")
 endif()
@@ -119,3 +124,7 @@ target_link_libraries(${TSN_PLUGIN_NAME} ${LIBS})
 set_target_properties(${TSN_PLUGIN_NAME} PROPERTIES PREFIX "")
 install(TARGETS ${TSN_PLUGIN_NAME} DESTINATION ${PLUGINS_PATH})
 
+add_library(${HW_PLUGIN_NAME} MODULE ${HW_SRC})
+target_link_libraries(${HW_PLUGIN_NAME} ${LIBS})
+set_target_properties(${HW_PLUGIN_NAME} PROPERTIES PREFIX "")
+install(TARGETS ${HW_PLUGIN_NAME} DESTINATION ${PLUGINS_PATH})
