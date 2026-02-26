@@ -928,9 +928,8 @@ int get_data_type_and_size(const struct lysc_node *snode,uint8_t *data_type, uin
 		const struct lysc_type_str *str = (const struct lysc_type_str *)type;
 
 		if (str->length) {
-			LOG_DBG(" String min %u, max %u", str->length->parts->min_64, str->length->parts->max_64);
+			LOG_DBG(" String min %lu, max %lu", str->length->parts->min_64, str->length->parts->max_64);
 		}
-		//*data_size = 
 	}
 #endif
 	return 0;

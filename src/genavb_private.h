@@ -20,7 +20,6 @@
 #include <genavb/genavb.h>
 #include <genavb/control.h>
 #include <genavb/managed_objects.h>
-#include <genavb/managed_objects_gptp.h>
 
 #include "genavb_common.h"
 #include "genavb_gptp_plugin.h"
