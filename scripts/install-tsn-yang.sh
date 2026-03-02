@@ -38,7 +38,7 @@ MODULES=(
 "nxp-bridge-vlan-tc-flower@2020-04-02.yang"
 "ieee802-dot1ab-types@2022-03-15.yang"
 "ietf-routing@2018-03-13.yang"
-"ieee802-dot1ab-lldp@2022-03-15.yang"
+"ieee802-dot1ab-lldp@2023-11-08.yang"
 "ieee1588-ptp-tt@2023-08-14.yang -e path-trace"
 "ieee802-dot1as-gptp@2024-09-11.yang"
 "iana-hardware@2018-03-13.yang"

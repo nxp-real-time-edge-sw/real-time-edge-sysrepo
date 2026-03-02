@@ -9,8 +9,8 @@ module ieee802-dot1ab-lldp {
   import ieee802-dot1ab-types {
     prefix lldp-types;
   }
-  import ietf-routing {
-    prefix rt;
+  import iana-routing-types {
+    prefix iana-rt-types;
   }
   import ietf-yang-types {
     prefix yang;
@@ -41,6 +41,22 @@ module ieee802-dot1ab-lldp {
     local system data, and remote systems data components. Copyright(C) IEEE
     (2022). All rights reserved. This version of this YANG module is part of
     IEEE Std 802.1ABcu; see the standard itself for full legal notices.";
+  revision 2023-11-08 {
+    description
+      "Changed paths of 'type leafref' of notification leafs so that sysrepo accepted the data of
+       notification leafs when they were set.
+	   For example: path '/lldp:lldp/lldp:remote-statistics/lldp:remote-ageouts' was change to path '/lldp/remote-statistics/remote-ageouts'";
+    reference
+      "Using 'type leafref' of notification in 'module: ietf-hardware'";
+  }
+  revision 2023-05-12 {
+    description
+      "Removed import of 'ietf-routing' and replaced with import of 'iana-routing-types'
+       Then changed type of 'address-subtype' from 'rt:address-family' to 'iana-rt-types:address-family'.
+       'rt:address-family'is NOT an enummeration whereas 'iana-rt-types:address-family' is.";
+    reference
+      "IEEE Std 802.1AB-2016 Sections 8.5.9.3 and 8.5.9.4";
+  }
   revision 2022-03-15 {
     description
       "Published as part of IEEE Std 802.1ABcu.";
@@ -338,9 +354,7 @@ module ieee802-dot1ab-lldp {
           "Set of ports (represented as a PortList) on which the local system
           management address instance will be transmitted.";
         leaf address-subtype {
-          type identityref {
-            base rt:address-family;
-          }
+          type iana-rt-types:address-family;
           description
             "Type of address.";
           reference
@@ -602,9 +616,7 @@ module ieee802-dot1ab-lldp {
             "Management address information about a particular chassis
             component.";
           leaf address-subtype {
-            type identityref {
-              base rt:address-family;
-            }
+            type iana-rt-types:address-family;
             description
               "Management address identifier encoding.";
             reference
@@ -713,7 +725,7 @@ module ieee802-dot1ab-lldp {
       trigger LLDP remote systems table maintenance polls.";
     leaf remote-insert {
       type leafref {
-        path '/lldp:lldp/lldp:remote-statistics/lldp:remote-inserts';
+        path '/lldp/remote-statistics/remote-inserts';
       }
       description
         "The number of times the complete set of information advertised by a
@@ -724,7 +736,7 @@ module ieee802-dot1ab-lldp {
     }
     leaf remote-delete {
       type leafref {
-        path '/lldp:lldp/lldp:remote-statistics/lldp:remote-deletes';
+        path '/lldp/remote-statistics/remote-deletes';
       }
       description
         "The number of times the complete set of information advertised by a
@@ -735,7 +747,7 @@ module ieee802-dot1ab-lldp {
     }
     leaf remote-drops {
       type leafref {
-        path '/lldp:lldp/lldp:remote-statistics/lldp:remote-drops';
+        path '/lldp/remote-statistics/remote-drops';
       }
       description
         "The number of times the complete set of information advertised by a
@@ -747,7 +759,7 @@ module ieee802-dot1ab-lldp {
     }
     leaf remote-ageouts {
       type leafref {
-        path '/lldp:lldp/lldp:remote-statistics/lldp:remote-ageouts';
+        path '/lldp/remote-statistics/remote-ageouts';
       }
       description
         "The number of times the complete set of information advertised by a
