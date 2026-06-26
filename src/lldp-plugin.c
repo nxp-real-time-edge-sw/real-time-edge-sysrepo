@@ -104,7 +104,7 @@ static int lldp_get_management_address(struct lyd_node *parent, const cJSON *cha
     if (ret == 0)
         return SR_ERR_NOT_FOUND;
 
-    const char *address_subtype = "ietf-routing:ipv4";
+    const char *address_subtype = "ipv4";
     snprintf(ipv4_val, sizeof(ipv4_val), "%08X", htonl(ipv4));
     lyd_new_list(parent, NULL, node_name, 0, &mgmt_node,
                  address_subtype, ipv4_val);
